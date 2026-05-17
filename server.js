@@ -73,35 +73,34 @@ app.post('/api/logout', (req, res) => {
 
 // ─── API: Menu ────────────────────────────────────────────────────────────────
 
-app.get('/api/menu', (req, res) => {
+app.get('/api/menu', async (req, res) => {
   try {
-    // Customers get only available items; admin gets all
     const token = req.headers['x-admin-token'] || req.query.token;
     const isAdmin = token && validTokens.has(token);
-    const items = isAdmin ? db.getAllMenuItems() : db.getAvailableMenuItems();
+    const items = await (isAdmin ? db.getAllMenuItems() : db.getAvailableMenuItems());
     res.json(items);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-app.post('/api/menu', requireAdmin, (req, res) => {
+app.post('/api/menu', requireAdmin, async (req, res) => {
   try {
     const { nome, descricao, preco, categoria, emoji } = req.body;
     if (!nome || !preco || !categoria) {
       return res.status(400).json({ error: 'Campos obrigatórios: nome, preco, categoria' });
     }
-    const result = db.addMenuItem(nome, descricao || '', parseFloat(preco), categoria, emoji || '🍽️');
-    res.status(201).json({ id: result.lastInsertRowid });
+    const result = await db.addMenuItem(nome, descricao || '', parseFloat(preco), categoria, emoji || '🍽️');
+    res.status(201).json({ id: result.lastID });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-app.put('/api/menu/:id', requireAdmin, (req, res) => {
+app.put('/api/menu/:id', requireAdmin, async (req, res) => {
   try {
     const { nome, descricao, preco, categoria, emoji, disponivel } = req.body;
-    db.updateMenuItem(
+    await db.updateMenuItem(
       req.params.id,
       nome,
       descricao || '',
@@ -116,9 +115,9 @@ app.put('/api/menu/:id', requireAdmin, (req, res) => {
   }
 });
 
-app.delete('/api/menu/:id', requireAdmin, (req, res) => {
+app.delete('/api/menu/:id', requireAdmin, async (req, res) => {
   try {
-    db.deleteMenuItem(req.params.id);
+    await db.deleteMenuItem(req.params.id);
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -127,32 +126,32 @@ app.delete('/api/menu/:id', requireAdmin, (req, res) => {
 
 // ─── API: Tables ─────────────────────────────────────────────────────────────
 
-app.get('/api/mesas', requireAdmin, (req, res) => {
+app.get('/api/mesas', requireAdmin, async (req, res) => {
   try {
-    res.json(db.getAllTables());
+    res.json(await db.getAllTables());
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-app.post('/api/mesas', requireAdmin, (req, res) => {
+app.post('/api/mesas', requireAdmin, async (req, res) => {
   try {
     const { numero } = req.body;
     if (!numero) return res.status(400).json({ error: 'Número da mesa é obrigatório' });
-    const result = db.addTable(parseInt(numero));
-    res.status(201).json({ id: result.lastInsertRowid });
+    const result = await db.addTable(parseInt(numero));
+    res.status(201).json({ id: result.lastID });
   } catch (e) {
-    if (e.message.includes('UNIQUE')) {
+    if (e.message && e.message.includes('UNIQUE')) {
       return res.status(400).json({ error: 'Mesa já existe' });
     }
     res.status(500).json({ error: e.message });
   }
 });
 
-app.put('/api/mesas/:numero/status', requireAdmin, (req, res) => {
+app.put('/api/mesas/:numero/status', requireAdmin, async (req, res) => {
   try {
     const { status } = req.body;
-    db.updateTableStatus(req.params.numero, status);
+    await db.updateTableStatus(req.params.numero, status);
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -161,36 +160,36 @@ app.put('/api/mesas/:numero/status', requireAdmin, (req, res) => {
 
 // ─── API: Orders ──────────────────────────────────────────────────────────────
 
-app.get('/api/pedidos', requireAdmin, (req, res) => {
+app.get('/api/pedidos', requireAdmin, async (req, res) => {
   try {
-    res.json(db.getAllActiveOrders());
+    res.json(await db.getAllActiveOrders());
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-app.get('/api/pedidos/mesa/:numero', (req, res) => {
+app.get('/api/pedidos/mesa/:numero', async (req, res) => {
   try {
-    res.json(db.getOrdersByMesa(parseInt(req.params.numero)));
+    res.json(await db.getOrdersByMesa(parseInt(req.params.numero)));
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-app.post('/api/pedidos', (req, res) => {
+app.post('/api/pedidos', async (req, res) => {
   try {
     const { mesa_numero, forma_pagamento, troco_para, total, items } = req.body;
     if (!mesa_numero || !items || items.length === 0) {
       return res.status(400).json({ error: 'Dados do pedido inválidos' });
     }
-    const orderId = db.createOrder(
+    const orderId = await db.createOrder(
       parseInt(mesa_numero),
       forma_pagamento || '',
       parseFloat(troco_para) || 0,
       parseFloat(total),
       items
     );
-    const order = db.getOrderById(orderId);
+    const order = await db.getOrderById(orderId);
 
     // Notify admin room
     io.to('admin').emit('novo_pedido', order);
@@ -203,11 +202,11 @@ app.post('/api/pedidos', (req, res) => {
   }
 });
 
-app.put('/api/pedidos/:id/status', requireAdmin, (req, res) => {
+app.put('/api/pedidos/:id/status', requireAdmin, async (req, res) => {
   try {
     const { status } = req.body;
-    db.updateOrderStatus(req.params.id, status);
-    const order = db.getOrderById(req.params.id);
+    await db.updateOrderStatus(req.params.id, status);
+    const order = await db.getOrderById(req.params.id);
 
     // Notify the specific mesa room
     io.to(`mesa_${order.mesa_numero}`).emit('status_atualizado', order);

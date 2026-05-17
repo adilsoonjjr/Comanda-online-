@@ -165,8 +165,10 @@ function fecharCheckout() {
 
 function selecionarPagamento(forma) {
   formaPagamento = forma;
-  document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('selected'));
-  event.currentTarget.classList.add('selected');
+  document.querySelectorAll('.pay-btn').forEach(b => {
+    const label = b.querySelector('.pay-label');
+    b.classList.toggle('selected', label && label.textContent === forma);
+  });
   document.getElementById('troco-group').classList.toggle('visible', forma === 'Dinheiro');
 }
 
