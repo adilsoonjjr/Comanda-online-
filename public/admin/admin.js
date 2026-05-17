@@ -190,7 +190,11 @@ async function carregarMenu() {
       <td><strong>${i.nome}</strong><br><small style="color:var(--text2)">${i.descricao}</small></td>
       <td>${i.categoria}</td>
       <td>R$ ${fmt(i.preco)}</td>
-      <td><span class="disponivel-badge ${i.disponivel ? 'disp-sim' : 'disp-nao'}">${i.disponivel ? 'Sim' : 'Não'}</span></td>
+      <td>
+        <button class="btn-sm ${i.disponivel ? 'btn-pronto' : 'btn-danger'}" onclick="toggleDisponivel(${i.id}, ${!i.disponivel})" style="padding:5px 12px;min-width:70px">
+          ${i.disponivel ? '✅ Ativo' : '❌ Inativo'}
+        </button>
+      </td>
       <td>${i.prato_do_dia ? '<span class="disponivel-badge" style="background:rgba(234,179,8,.15);color:#d97706">⭐ Sim</span>' : '—'}</td>
       <td>
         <button class="btn-sm btn-preparar" onclick="editarItem(${i.id})" style="padding:5px 10px">✏️</button>
@@ -248,6 +252,17 @@ async function salvarItem() {
   });
   if (!res.ok) { const d = await res.json(); alert(d.error); return; }
   fecharModal('modal-item');
+  carregarMenu();
+}
+
+async function toggleDisponivel(id, novoEstado) {
+  const item = (window._menuItems || []).find(i => i.id === id);
+  if (!item) return;
+  await fetch(`/api/menu/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+    body: JSON.stringify({ ...item, disponivel: novoEstado, prato_do_dia: !!item.prato_do_dia }),
+  });
   carregarMenu();
 }
 
