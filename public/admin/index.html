@@ -254,9 +254,35 @@
     .stat-green { color: var(--green); }
     .stat-yellow { color: var(--yellow); }
 
+    /* ── Bottom Nav (mobile) ── */
+    .bottom-nav {
+      display: none;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--surface); border-top: 1px solid var(--border);
+      z-index: 200; padding-bottom: env(safe-area-inset-bottom);
+    }
+    .bottom-nav-inner {
+      display: flex; justify-content: space-around; align-items: center;
+      height: 60px;
+    }
+    .bottom-nav-item {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      flex: 1; gap: 3px; cursor: pointer; padding: 6px 4px;
+      color: var(--text2); font-size: 10px; font-weight: 600;
+      border-radius: 10px; transition: color .2s; position: relative;
+    }
+    .bottom-nav-item .bn-icon { font-size: 20px; line-height: 1; }
+    .bottom-nav-item.active { color: var(--accent); }
+    .bottom-nav-badge {
+      position: absolute; top: 4px; right: calc(50% - 18px);
+      background: var(--red); color: #fff; font-size: 9px; font-weight: 700;
+      border-radius: 8px; padding: 1px 5px; display: none;
+    }
+
     @media (max-width: 768px) {
       .sidebar { display: none; }
-      .main { padding: 16px; }
+      .main { padding: 16px; padding-bottom: 80px; }
+      .bottom-nav { display: block; }
     }
   </style>
 </head>
@@ -414,6 +440,29 @@
 </div>
 
 <div id="toast-container"></div>
+
+<!-- Bottom Nav (mobile) -->
+<nav class="bottom-nav">
+  <div class="bottom-nav-inner">
+    <div class="bottom-nav-item active" data-tab="pedidos" onclick="switchTab('pedidos')">
+      <span class="bn-icon">📋</span>
+      <span>Pedidos</span>
+      <span class="bottom-nav-badge" id="bn-badge-pedidos"></span>
+    </div>
+    <div class="bottom-nav-item" data-tab="cardapio" onclick="switchTab('cardapio')">
+      <span class="bn-icon">🍴</span>
+      <span>Cardápio</span>
+    </div>
+    <div class="bottom-nav-item" data-tab="mesas" onclick="switchTab('mesas')">
+      <span class="bn-icon">🪑</span>
+      <span>Mesas</span>
+    </div>
+    <div class="bottom-nav-item" data-tab="qrcodes" onclick="switchTab('qrcodes')">
+      <span class="bn-icon">📱</span>
+      <span>QR Codes</span>
+    </div>
+  </div>
+</nav>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="admin.js"></script>

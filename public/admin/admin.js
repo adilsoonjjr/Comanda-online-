@@ -69,9 +69,9 @@ function conectarSocket() {
 
 function switchTab(tab) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item, .bottom-nav-item').forEach(el => el.classList.remove('active'));
   document.getElementById(`tab-${tab}`).classList.add('active');
-  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+  document.querySelectorAll(`[data-tab="${tab}"]`).forEach(el => el.classList.add('active'));
 
   if (tab === 'pedidos') { newOrderCount = 0; atualizarBadges(); carregarPedidos(); }
   if (tab === 'cardapio') carregarMenu();
@@ -84,9 +84,12 @@ function toggleTab(tab) { switchTab(tab); }
 function atualizarBadges() {
   const b = document.getElementById('bell-badge');
   const nb = document.getElementById('nav-badge-pedidos');
-  b.style.display = newOrderCount > 0 ? 'flex' : 'none';
-  nb.style.display = newOrderCount > 0 ? 'inline' : 'none';
-  b.textContent = nb.textContent = newOrderCount;
+  const bnb = document.getElementById('bn-badge-pedidos');
+  const show = newOrderCount > 0;
+  b.style.display = show ? 'flex' : 'none';
+  nb.style.display = show ? 'inline' : 'none';
+  bnb.style.display = show ? 'inline' : 'none';
+  b.textContent = nb.textContent = bnb.textContent = newOrderCount;
 }
 
 // ── Pedidos ────────────────────────────────────────────────────────────────
