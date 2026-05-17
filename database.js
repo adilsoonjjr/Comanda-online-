@@ -1,182 +1,181 @@
 'use strict';
 
-const Database = require('better-sqlite3');
+const { createClient } = require('@libsql/client');
 const path = require('path');
 
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'comanda.db');
-const db = new Database(DB_PATH);
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+const client = createClient({
+  url: process.env.TURSO_URL || `file:${process.env.DB_PATH || path.join(__dirname, 'comanda.db')}`,
+  authToken: process.env.TURSO_TOKEN,
+});
+
+async function run(sql, args = []) {
+  return client.execute({ sql, args });
+}
+
+async function all(sql, args = []) {
+  const result = await client.execute({ sql, args });
+  return result.rows.map(row => {
+    const obj = {};
+    result.columns.forEach((col, i) => { obj[col] = row[i]; });
+    return obj;
+  });
+}
+
+async function get(sql, args = []) {
+  const result = await client.execute({ sql, args });
+  if (!result.rows[0]) return null;
+  const obj = {};
+  result.columns.forEach((col, i) => { obj[col] = result.rows[0][i]; });
+  return obj;
+}
 
 // ── Init ───────────────────────────────────────────────────────────────────
 
-function initDatabase() {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS tables (
-      id      INTEGER PRIMARY KEY AUTOINCREMENT,
-      numero  INTEGER UNIQUE NOT NULL,
-      status  TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','inactive'))
-    );
+async function initDatabase() {
+  await run(`CREATE TABLE IF NOT EXISTS tables (
+    id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    numero  INTEGER UNIQUE NOT NULL,
+    status  TEXT NOT NULL DEFAULT 'active'
+  )`);
 
-    CREATE TABLE IF NOT EXISTS menu_items (
-      id           INTEGER PRIMARY KEY AUTOINCREMENT,
-      nome         TEXT NOT NULL,
-      descricao    TEXT DEFAULT '',
-      preco        REAL NOT NULL,
-      categoria    TEXT NOT NULL,
-      emoji        TEXT DEFAULT '🍽️',
-      disponivel   INTEGER NOT NULL DEFAULT 1,
-      prato_do_dia INTEGER NOT NULL DEFAULT 0
-    );
+  await run(`CREATE TABLE IF NOT EXISTS menu_items (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome         TEXT NOT NULL,
+    descricao    TEXT DEFAULT '',
+    preco        REAL NOT NULL,
+    categoria    TEXT NOT NULL,
+    emoji        TEXT DEFAULT '🍽️',
+    disponivel   INTEGER NOT NULL DEFAULT 1,
+    prato_do_dia INTEGER NOT NULL DEFAULT 0
+  )`);
 
-    CREATE TABLE IF NOT EXISTS orders (
-      id              INTEGER PRIMARY KEY AUTOINCREMENT,
-      mesa_numero     INTEGER NOT NULL,
-      status          TEXT NOT NULL DEFAULT 'pendente'
-                        CHECK(status IN ('pendente','preparando','pronto','finalizado')),
-      forma_pagamento TEXT DEFAULT '',
-      troco_para      REAL DEFAULT 0,
-      total           REAL NOT NULL DEFAULT 0,
-      created_at      TEXT NOT NULL
-                        DEFAULT (strftime('%Y-%m-%dT%H:%M:%S','now','localtime'))
-    );
+  await run(`CREATE TABLE IF NOT EXISTS orders (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    mesa_numero     INTEGER NOT NULL,
+    status          TEXT NOT NULL DEFAULT 'pendente',
+    forma_pagamento TEXT DEFAULT '',
+    troco_para      REAL DEFAULT 0,
+    total           REAL NOT NULL DEFAULT 0,
+    created_at      TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%S','now','localtime'))
+  )`);
 
-    CREATE TABLE IF NOT EXISTS order_items (
-      id             INTEGER PRIMARY KEY AUTOINCREMENT,
-      order_id       INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-      item_id        INTEGER NOT NULL,
-      quantidade     INTEGER NOT NULL DEFAULT 1,
-      preco_unitario REAL NOT NULL,
-      nome_item      TEXT NOT NULL
-    );
-  `);
+  await run(`CREATE TABLE IF NOT EXISTS order_items (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_id       INTEGER NOT NULL,
+    item_id        INTEGER NOT NULL,
+    quantidade     INTEGER NOT NULL DEFAULT 1,
+    preco_unitario REAL NOT NULL,
+    nome_item      TEXT NOT NULL
+  )`);
 
-  // Migration: add prato_do_dia column if missing (existing databases)
-  const cols = db.prepare('PRAGMA table_info(menu_items)').all();
-  if (!cols.find(c => c.name === 'prato_do_dia')) {
-    db.exec('ALTER TABLE menu_items ADD COLUMN prato_do_dia INTEGER NOT NULL DEFAULT 0');
-  }
+  // Migration: prato_do_dia column
+  try {
+    await run('ALTER TABLE menu_items ADD COLUMN prato_do_dia INTEGER NOT NULL DEFAULT 0');
+  } catch { /* already exists */ }
 
-  const tableCount = db.prepare('SELECT COUNT(*) as c FROM tables').get().c;
-  if (tableCount === 0) {
-    const ins = db.prepare('INSERT INTO tables (numero) VALUES (?)');
-    for (let i = 1; i <= 5; i++) ins.run(i);
+  const tc = await get('SELECT COUNT(*) as c FROM tables');
+  if (!tc || tc.c === 0) {
+    for (let i = 1; i <= 5; i++) await run('INSERT INTO tables (numero) VALUES (?)', [i]);
     console.log('✅ Mesas criadas (1-5)');
   }
 
-  console.log('✅ Cardápio vazio — adicione os produtos pelo painel Admin');
+  console.log('✅ Banco de dados pronto');
 }
 
 // ── Tables ─────────────────────────────────────────────────────────────────
 
-function getAllTables() {
-  return db.prepare('SELECT * FROM tables ORDER BY numero').all();
-}
-function addTable(numero) {
-  return db.prepare('INSERT INTO tables (numero) VALUES (?)').run(numero);
-}
+function getAllTables() { return all('SELECT * FROM tables ORDER BY numero'); }
+function addTable(numero) { return run('INSERT INTO tables (numero) VALUES (?)', [numero]); }
 function updateTableStatus(numero, status) {
-  return db.prepare('UPDATE tables SET status=? WHERE numero=?').run(status, numero);
+  return run('UPDATE tables SET status=? WHERE numero=?', [status, numero]);
 }
 
 // ── Menu ───────────────────────────────────────────────────────────────────
 
-function getAllMenuItems() {
-  return db.prepare('SELECT * FROM menu_items ORDER BY categoria, nome').all();
-}
-function getAvailableMenuItems() {
-  return db.prepare('SELECT * FROM menu_items WHERE disponivel=1 ORDER BY categoria, nome').all();
-}
+function getAllMenuItems() { return all('SELECT * FROM menu_items ORDER BY categoria, nome'); }
+function getAvailableMenuItems() { return all('SELECT * FROM menu_items WHERE disponivel=1 ORDER BY categoria, nome'); }
+
 function addMenuItem(nome, descricao, preco, categoria, emoji, prato_do_dia) {
-  return db.prepare(
-    'INSERT INTO menu_items (nome, descricao, preco, categoria, emoji, prato_do_dia) VALUES (?,?,?,?,?,?)'
-  ).run(nome, descricao, preco, categoria, emoji, prato_do_dia ? 1 : 0);
+  return run(
+    'INSERT INTO menu_items (nome, descricao, preco, categoria, emoji, prato_do_dia) VALUES (?,?,?,?,?,?)',
+    [nome, descricao, preco, categoria, emoji, prato_do_dia ? 1 : 0]
+  );
 }
+
 function updateMenuItem(id, nome, descricao, preco, categoria, emoji, disponivel, prato_do_dia) {
-  return db.prepare(
-    'UPDATE menu_items SET nome=?, descricao=?, preco=?, categoria=?, emoji=?, disponivel=?, prato_do_dia=? WHERE id=?'
-  ).run(nome, descricao, preco, categoria, emoji, disponivel ? 1 : 0, prato_do_dia ? 1 : 0, id);
+  return run(
+    'UPDATE menu_items SET nome=?, descricao=?, preco=?, categoria=?, emoji=?, disponivel=?, prato_do_dia=? WHERE id=?',
+    [nome, descricao, preco, categoria, emoji, disponivel ? 1 : 0, prato_do_dia ? 1 : 0, id]
+  );
 }
-function deleteMenuItem(id) {
-  return db.prepare('DELETE FROM menu_items WHERE id=?').run(id);
-}
+
+function deleteMenuItem(id) { return run('DELETE FROM menu_items WHERE id=?', [id]); }
 
 // ── Orders ─────────────────────────────────────────────────────────────────
 
-function attachItems(orders) {
-  const stmt = db.prepare('SELECT * FROM order_items WHERE order_id=?');
-  return orders.map(o => ({ ...o, items: stmt.all(o.id) }));
+async function attachItems(orders) {
+  return Promise.all(orders.map(async o => {
+    const items = await all('SELECT * FROM order_items WHERE order_id=?', [o.id]);
+    return { ...o, items };
+  }));
 }
 
-function getAllActiveOrders() {
-  const orders = db.prepare(
-    "SELECT * FROM orders WHERE status != 'finalizado' ORDER BY created_at DESC"
-  ).all();
+async function getAllActiveOrders() {
+  const orders = await all("SELECT * FROM orders WHERE status != 'finalizado' ORDER BY created_at DESC");
   return attachItems(orders);
 }
 
-function getOrdersByMesa(numero) {
-  const orders = db.prepare(
-    "SELECT * FROM orders WHERE mesa_numero=? AND status != 'finalizado' ORDER BY created_at DESC"
-  ).all(numero);
+async function getOrdersByMesa(numero) {
+  const orders = await all(
+    "SELECT * FROM orders WHERE mesa_numero=? AND status != 'finalizado' ORDER BY created_at DESC", [numero]
+  );
   return attachItems(orders);
 }
 
-function getOrderById(id) {
-  const order = db.prepare('SELECT * FROM orders WHERE id=?').get(id);
+async function getOrderById(id) {
+  const order = await get('SELECT * FROM orders WHERE id=?', [id]);
   if (!order) return null;
-  return attachItems([order])[0];
+  return (await attachItems([order]))[0];
 }
 
-function createOrder(mesa_numero, forma_pagamento, troco_para, total, items) {
-  const insertOrder = db.transaction(() => {
-    const result = db.prepare(
-      'INSERT INTO orders (mesa_numero, forma_pagamento, troco_para, total) VALUES (?,?,?,?)'
-    ).run(mesa_numero, forma_pagamento, troco_para || 0, total);
-
-    const orderId = result.lastInsertRowid;
-    const insItem = db.prepare(
-      'INSERT INTO order_items (order_id, item_id, quantidade, preco_unitario, nome_item) VALUES (?,?,?,?,?)'
+async function createOrder(mesa_numero, forma_pagamento, troco_para, total, items) {
+  const result = await run(
+    'INSERT INTO orders (mesa_numero, forma_pagamento, troco_para, total) VALUES (?,?,?,?)',
+    [mesa_numero, forma_pagamento, troco_para || 0, total]
+  );
+  const orderId = result.lastInsertRowid;
+  for (const item of items) {
+    await run(
+      'INSERT INTO order_items (order_id, item_id, quantidade, preco_unitario, nome_item) VALUES (?,?,?,?,?)',
+      [orderId, item.item_id, item.quantidade, item.preco_unitario, item.nome_item]
     );
-    for (const item of items) {
-      insItem.run(orderId, item.item_id, item.quantidade, item.preco_unitario, item.nome_item);
-    }
-    return orderId;
-  });
-  return insertOrder();
-}
-
-function getTotalAtivoByMesa(mesa_numero) {
-  return db.prepare(
-    "SELECT COALESCE(SUM(total), 0) as total FROM orders WHERE mesa_numero=? AND status != 'finalizado'"
-  ).get(mesa_numero).total;
-}
-
-function closeAllOrdersByMesa(mesa_numero, forma_pagamento, troco_para) {
-  db.prepare(
-    "UPDATE orders SET status='finalizado', forma_pagamento=?, troco_para=? WHERE mesa_numero=? AND status != 'finalizado'"
-  ).run(forma_pagamento, troco_para || 0, mesa_numero);
+  }
+  return orderId;
 }
 
 function updateOrderStatus(id, status) {
-  return db.prepare('UPDATE orders SET status=? WHERE id=?').run(status, id);
+  return run('UPDATE orders SET status=? WHERE id=?', [status, id]);
+}
+
+async function getTotalAtivoByMesa(mesa_numero) {
+  const row = await get(
+    "SELECT COALESCE(SUM(total), 0) as total FROM orders WHERE mesa_numero=? AND status != 'finalizado'",
+    [mesa_numero]
+  );
+  return row ? row.total : 0;
+}
+
+async function closeAllOrdersByMesa(mesa_numero, forma_pagamento, troco_para) {
+  await run(
+    "UPDATE orders SET status='finalizado', forma_pagamento=?, troco_para=? WHERE mesa_numero=? AND status != 'finalizado'",
+    [forma_pagamento, troco_para || 0, mesa_numero]
+  );
 }
 
 module.exports = {
-  getTotalAtivoByMesa,
-  closeAllOrdersByMesa,
   initDatabase,
-  getAllTables,
-  addTable,
-  updateTableStatus,
-  getAllMenuItems,
-  getAvailableMenuItems,
-  addMenuItem,
-  updateMenuItem,
-  deleteMenuItem,
-  getAllActiveOrders,
-  getOrdersByMesa,
-  getOrderById,
-  createOrder,
-  updateOrderStatus,
+  getAllTables, addTable, updateTableStatus,
+  getAllMenuItems, getAvailableMenuItems, addMenuItem, updateMenuItem, deleteMenuItem,
+  getAllActiveOrders, getOrdersByMesa, getOrderById, createOrder, updateOrderStatus,
+  getTotalAtivoByMesa, closeAllOrdersByMesa,
 };
