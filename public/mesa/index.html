@@ -6,16 +6,10 @@
   <title>Cardápio Digital</title>
   <style>
     :root {
-      --bg: #fef9f0;
-      --surface: #ffffff;
-      --border: #f0e8d8;
-      --accent: #f97316;
-      --accent2: #ea580c;
-      --text: #1c1917;
-      --text2: #78716c;
-      --green: #16a34a;
-      --blue: #2563eb;
-      --yellow: #d97706;
+      --bg: #fef9f0; --surface: #ffffff; --border: #f0e8d8;
+      --accent: #f97316; --accent2: #ea580c;
+      --text: #1c1917; --text2: #78716c;
+      --green: #16a34a; --blue: #2563eb; --yellow: #d97706; --red: #dc2626;
       --radius: 14px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -40,100 +34,76 @@
       display: none; align-items: center; justify-content: center;
     }
 
-    /* ── Status Banner (após pedido) ── */
-    .status-banner {
-      display: none; background: #fff; border-bottom: 2px solid var(--border);
-      padding: 14px 20px;
-    }
+    /* ── Status Banner ── */
+    .status-banner { display: none; background: #fff; border-bottom: 2px solid var(--border); padding: 14px 20px; }
     .status-banner.visible { display: block; }
-    .status-banner-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .status-banner-top { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
     .status-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
     .status-dot.pendente { background: #eab308; }
     .status-dot.preparando { background: var(--blue); animation: pulse 1.5s infinite; }
     .status-dot.pronto { background: var(--green); }
-    @keyframes pulse { 0%,100%{ opacity:1 } 50%{ opacity:.3 } }
-    .status-text { font-size: 15px; font-weight: 700; }
-    .status-sub { font-size: 12px; color: var(--text2); margin-left: 21px; margin-bottom: 10px; }
-    .btn-whatsapp-small {
-      display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px;
-      background: #25D366; border: none; border-radius: 8px; color: #fff;
-      font-size: 13px; font-weight: 700; cursor: pointer; text-decoration: none;
-    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .status-text { font-size: 14px; font-weight: 700; }
+    .status-sub { font-size: 12px; color: var(--text2); margin-left: 21px; }
 
-    /* ── Toast de confirmação ── */
+    /* ── Toast ── */
     .toast-pedido {
       display: none; position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
-      background: var(--green); color: #fff; padding: 14px 24px; border-radius: 40px;
-      font-size: 15px; font-weight: 700; z-index: 500; white-space: nowrap;
-      box-shadow: 0 4px 20px rgba(0,0,0,.2);
-      animation: fadeDown .3s ease;
+      background: var(--green); color: #fff; padding: 13px 22px; border-radius: 40px;
+      font-size: 14px; font-weight: 700; z-index: 500; white-space: nowrap;
+      box-shadow: 0 4px 20px rgba(0,0,0,.2); animation: fadeDown .3s ease;
     }
     .toast-pedido.visible { display: block; }
-    @keyframes fadeDown { from { opacity:0; transform: translateX(-50%) translateY(-10px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
+    @keyframes fadeDown { from{opacity:0;transform:translateX(-50%) translateY(-10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
 
     /* ── Prato do Dia ── */
     .prato-dia-section { padding: 14px 16px 0; }
     .prato-dia-card {
-      background: linear-gradient(135deg, #fff8ec, #fff3db);
-      border: 2px solid #f59e0b; border-radius: var(--radius);
-      padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      background: linear-gradient(135deg,#fff8ec,#fff3db); border: 2px solid #f59e0b;
+      border-radius: var(--radius); padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px;
     }
-    .prato-dia-badge {
-      display: inline-block; background: #f59e0b; color: #fff;
-      font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 20px;
-      text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px;
-    }
+    .prato-dia-badge { display: inline-block; background: #f59e0b; color: #fff; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
     .prato-dia-nome { font-size: 16px; font-weight: 800; margin-bottom: 3px; }
     .prato-dia-desc { font-size: 12px; color: var(--text2); margin-bottom: 8px; }
     .prato-dia-price { font-size: 18px; font-weight: 800; color: var(--yellow); }
-    .prato-dia-add {
-      width: 40px; height: 40px; border-radius: 50%; background: var(--accent); border: none;
-      color: #fff; font-size: 24px; cursor: pointer; display: flex; align-items: center;
-      justify-content: center; flex-shrink: 0; transition: background .2s;
-    }
-    .prato-dia-add:active { background: var(--accent2); }
+    .prato-dia-add { width: 40px; height: 40px; border-radius: 50%; background: var(--accent); border: none; color: #fff; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
     /* ── Categories ── */
     .cats-wrap { overflow-x: auto; padding: 14px 16px 8px; display: flex; gap: 8px; scrollbar-width: none; }
     .cats-wrap::-webkit-scrollbar { display: none; }
-    .cat-btn {
-      flex-shrink: 0; padding: 7px 16px; border-radius: 20px; border: 1.5px solid var(--border);
-      background: var(--surface); font-size: 13px; font-weight: 600; color: var(--text2);
-      cursor: pointer; transition: all .2s; white-space: nowrap;
-    }
+    .cat-btn { flex-shrink: 0; padding: 7px 16px; border-radius: 20px; border: 1.5px solid var(--border); background: var(--surface); font-size: 13px; font-weight: 600; color: var(--text2); cursor: pointer; transition: all .2s; white-space: nowrap; }
     .cat-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
     /* ── Menu Grid ── */
-    .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; padding: 8px 16px 100px; }
-
-    .item-card {
-      background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius);
-      overflow: hidden; transition: all .2s;
-    }
+    .menu-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(160px,1fr)); gap: 14px; padding: 8px 16px 160px; }
+    .item-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: all .2s; }
     .item-card:active { transform: scale(.97); }
     .item-body { padding: 14px 12px; }
     .item-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; line-height: 1.3; }
     .item-desc { font-size: 11px; color: var(--text2); margin-bottom: 10px; line-height: 1.4; }
     .item-footer { display: flex; align-items: center; justify-content: space-between; }
     .item-price { font-size: 15px; font-weight: 800; color: var(--accent); }
-    .add-btn {
-      width: 32px; height: 32px; border-radius: 50%; background: var(--accent); border: none;
-      color: #fff; font-size: 22px; cursor: pointer; display: flex; align-items: center;
-      justify-content: center; flex-shrink: 0; transition: background .2s;
-    }
+    .add-btn { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); border: none; color: #fff; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .add-btn:active { background: var(--accent2); }
 
+    /* ── Botão Fechar Conta (fixo no rodapé) ── */
+    .fechar-conta-bar {
+      position: fixed; bottom: 0; left: 0; right: 0; padding: 12px 16px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom));
+      background: #fff; border-top: 2px solid var(--border); z-index: 150;
+    }
+    .btn-fechar-conta {
+      width: 100%; padding: 16px; background: var(--red); border: none;
+      border-radius: var(--radius); color: #fff; font-size: 16px; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-fechar-conta:active { opacity: .85; }
+    .fechar-total { font-size: 13px; opacity: .85; font-weight: 500; }
+
     /* ── Cart Drawer ── */
-    .drawer-overlay {
-      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200;
-    }
+    .drawer-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; }
     .drawer-overlay.open { display: block; }
-    .drawer {
-      position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface);
-      border-radius: 24px 24px 0 0; padding: 0 0 env(safe-area-inset-bottom,16px);
-      max-height: 85vh; overflow-y: auto; transform: translateY(100%);
-      transition: transform .35s cubic-bezier(.32,1,.65,1); z-index: 201;
-    }
+    .drawer { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-radius: 24px 24px 0 0; padding: 0 0 env(safe-area-inset-bottom,16px); max-height: 85vh; overflow-y: auto; transform: translateY(100%); transition: transform .35s cubic-bezier(.32,1,.65,1); z-index: 201; }
     .drawer.open { transform: translateY(0); }
     .drawer-handle { width: 40px; height: 4px; background: #e5e7eb; border-radius: 2px; margin: 14px auto 0; }
     .drawer-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
@@ -146,65 +116,57 @@
     .cart-item-name { font-size: 14px; font-weight: 600; }
     .cart-item-price { font-size: 13px; color: var(--text2); margin-top: 2px; }
     .qty-ctrl { display: flex; align-items: center; gap: 8px; }
-    .qty-btn {
-      width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--border);
-      background: #fff; font-size: 16px; cursor: pointer; display: flex;
-      align-items: center; justify-content: center; font-weight: 700; transition: all .15s;
-    }
+    .qty-btn { width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--border); background: #fff; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: 700; }
     .qty-btn:active { background: var(--border); }
     .qty-num { font-size: 15px; font-weight: 700; min-width: 20px; text-align: center; }
     .cart-footer { padding: 16px 20px; border-top: 2px solid var(--border); }
     .cart-total-row { display: flex; justify-content: space-between; font-size: 18px; font-weight: 800; margin-bottom: 14px; }
-    .btn-checkout {
-      width: 100%; padding: 16px; background: var(--accent); border: none; border-radius: var(--radius);
-      color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; transition: background .2s;
-    }
+    .btn-checkout { width: 100%; padding: 16px; background: var(--accent); border: none; border-radius: var(--radius); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; }
     .btn-checkout:active { background: var(--accent2); }
     .empty-cart { text-align: center; padding: 40px 20px; color: var(--text2); }
     .empty-cart .icon { font-size: 48px; margin-bottom: 12px; }
 
-    /* ── Checkout Sheet ── */
-    .checkout-overlay {
-      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 300;
-      align-items: flex-end; justify-content: center;
-    }
+    /* ── Checkout Sheet (sem pagamento) ── */
+    .checkout-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 300; align-items: flex-end; justify-content: center; }
     .checkout-overlay.open { display: flex; }
-    .checkout-sheet {
-      background: var(--surface); border-radius: 24px 24px 0 0; width: 100%; max-width: 540px;
-      padding: 0 0 env(safe-area-inset-bottom,20px); max-height: 90vh; overflow-y: auto;
-    }
+    .checkout-sheet { background: var(--surface); border-radius: 24px 24px 0 0; width: 100%; max-width: 540px; padding: 0 0 env(safe-area-inset-bottom,20px); max-height: 90vh; overflow-y: auto; }
     .checkout-header { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); }
     .checkout-header h2 { font-size: 20px; font-weight: 800; }
     .checkout-body { padding: 20px; }
     .checkout-section-title { font-size: 13px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px; }
-    .pay-methods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
-    .pay-btn {
-      padding: 16px 8px; border: 2px solid var(--border); border-radius: var(--radius);
-      background: #fff; cursor: pointer; text-align: center; transition: all .2s;
-    }
-    .pay-btn .pay-icon { font-size: 28px; margin-bottom: 4px; }
-    .pay-btn .pay-label { font-size: 13px; font-weight: 700; color: var(--text); }
-    .pay-btn.selected { border-color: var(--accent); background: #fff8f3; }
-    .troco-group { margin-bottom: 20px; display: none; }
-    .troco-group.visible { display: block; }
-    .troco-group label { font-size: 14px; font-weight: 600; display: block; margin-bottom: 8px; }
-    .troco-group input {
-      width: 100%; padding: 13px 16px; border: 1.5px solid var(--border); border-radius: var(--radius);
-      font-size: 16px; outline: none; transition: border-color .2s;
-    }
-    .troco-group input:focus { border-color: var(--accent); }
     .order-summary { background: #fafafa; border-radius: var(--radius); padding: 16px; margin-bottom: 20px; }
     .summary-item { display: flex; justify-content: space-between; font-size: 14px; padding: 4px 0; }
     .summary-total { display: flex; justify-content: space-between; font-size: 16px; font-weight: 800; padding-top: 10px; border-top: 1px solid var(--border); margin-top: 6px; }
-    .btn-confirmar {
-      width: 100%; padding: 16px; background: var(--accent); border: none; border-radius: var(--radius);
-      color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; transition: background .2s; margin-bottom: 10px;
-    }
+    .btn-confirmar { width: 100%; padding: 16px; background: var(--accent); border: none; border-radius: var(--radius); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; margin-bottom: 10px; }
     .btn-confirmar:active { background: var(--accent2); }
-    .btn-voltar {
-      width: 100%; padding: 14px; background: #f5f5f5; border: none; border-radius: var(--radius);
-      color: var(--text2); font-size: 15px; font-weight: 600; cursor: pointer;
-    }
+    .btn-voltar { width: 100%; padding: 14px; background: #f5f5f5; border: none; border-radius: var(--radius); color: var(--text2); font-size: 15px; font-weight: 600; cursor: pointer; }
+
+    /* ── Sheet Fechar Conta (com pagamento) ── */
+    .pay-methods { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 20px; }
+    .pay-btn { padding: 16px 8px; border: 2px solid var(--border); border-radius: var(--radius); background: #fff; cursor: pointer; text-align: center; transition: all .2s; }
+    .pay-btn .pay-icon { font-size: 28px; margin-bottom: 4px; }
+    .pay-btn .pay-label { font-size: 13px; font-weight: 700; color: var(--text); }
+    .pay-btn.selected { border-color: var(--red); background: #fff5f5; }
+    .troco-group { margin-bottom: 20px; display: none; }
+    .troco-group.visible { display: block; }
+    .troco-group label { font-size: 14px; font-weight: 600; display: block; margin-bottom: 8px; }
+    .troco-group input { width: 100%; padding: 13px 16px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 16px; outline: none; }
+    .troco-group input:focus { border-color: var(--red); }
+    .total-geral-box { background: #fff5f5; border: 2px solid var(--red); border-radius: var(--radius); padding: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+    .total-geral-label { font-size: 14px; color: var(--text2); font-weight: 600; }
+    .total-geral-val { font-size: 24px; font-weight: 900; color: var(--red); }
+    .btn-fechar-confirmar { width: 100%; padding: 16px; background: var(--red); border: none; border-radius: var(--radius); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; margin-bottom: 10px; }
+
+    /* ── Tela Aguardando ── */
+    #tela-aguardando { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 400; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; text-align: center; }
+    #tela-aguardando.visible { display: flex; }
+    .aguardando-icon { font-size: 72px; margin-bottom: 20px; animation: bounce 2s infinite; }
+    @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+    .aguardando-title { font-size: 24px; font-weight: 800; margin-bottom: 10px; }
+    .aguardando-sub { font-size: 15px; color: var(--text2); margin-bottom: 30px; line-height: 1.6; }
+    .aguardando-total { font-size: 32px; font-weight: 900; color: var(--red); margin-bottom: 8px; }
+    .aguardando-pag { font-size: 14px; color: var(--text2); margin-bottom: 32px; }
+    .btn-whatsapp-small { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; background: #25D366; border: none; border-radius: var(--radius); color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; text-decoration: none; }
   </style>
 </head>
 <body>
@@ -219,14 +181,13 @@
   </button>
 </header>
 
-<!-- Status Banner (aparece após pedido) -->
+<!-- Status Banner -->
 <div class="status-banner" id="status-banner">
   <div class="status-banner-top">
     <div class="status-dot pendente" id="status-dot"></div>
     <div class="status-text" id="status-text">Pedido recebido</div>
   </div>
   <div class="status-sub" id="status-sub">Aguardando preparo</div>
-  <a href="#" id="btn-whatsapp" class="btn-whatsapp-small" target="_blank">📱 Recibo via WhatsApp</a>
 </div>
 
 <!-- Prato do Dia -->
@@ -235,11 +196,19 @@
 <!-- Categorias -->
 <div class="cats-wrap" id="cats-wrap"></div>
 
-<!-- Grid do cardápio -->
+<!-- Grid cardápio -->
 <div class="menu-grid" id="menu-grid"></div>
 
-<!-- Toast de confirmação -->
-<div class="toast-pedido" id="toast-pedido">✅ Pedido enviado com sucesso!</div>
+<!-- Toast confirmação de pedido -->
+<div class="toast-pedido" id="toast-pedido">✅ Pedido enviado!</div>
+
+<!-- Botão Fechar Conta (fixo no rodapé) -->
+<div class="fechar-conta-bar">
+  <button class="btn-fechar-conta" onclick="abrirFecharConta()">
+    <span>🧾 Fechar Conta</span>
+    <span class="fechar-total" id="fechar-total-label"></span>
+  </button>
+</div>
 
 <!-- Cart Drawer -->
 <div class="drawer-overlay" id="drawer-overlay" onclick="fecharCarrinho()"></div>
@@ -255,40 +224,68 @@
       <span>Total</span>
       <span id="cart-total-val">R$ 0,00</span>
     </div>
-    <button class="btn-checkout" onclick="abrirCheckout()">Finalizar Pedido →</button>
+    <button class="btn-checkout" onclick="abrirCheckout()">Enviar Pedido →</button>
   </div>
 </div>
 
-<!-- Checkout Sheet -->
+<!-- Checkout Sheet (só resumo, sem pagamento) -->
 <div class="checkout-overlay" id="checkout-overlay">
   <div class="checkout-sheet">
     <div class="checkout-header">
       <div class="drawer-handle" style="margin-top:0;margin-bottom:12px"></div>
-      <h2>Finalizar Pedido</h2>
+      <h2>Confirmar Pedido</h2>
     </div>
     <div class="checkout-body">
-      <div class="checkout-section-title">Forma de Pagamento</div>
-      <div class="pay-methods">
-        <div class="pay-btn" onclick="selecionarPagamento('Dinheiro')">
-          <div class="pay-icon">💵</div><div class="pay-label">Dinheiro</div>
-        </div>
-        <div class="pay-btn" onclick="selecionarPagamento('PIX')">
-          <div class="pay-icon">📲</div><div class="pay-label">PIX</div>
-        </div>
-        <div class="pay-btn" onclick="selecionarPagamento('Cartão')">
-          <div class="pay-icon">💳</div><div class="pay-label">Cartão</div>
-        </div>
-      </div>
-      <div class="troco-group" id="troco-group">
-        <label>Troco para quanto? (R$)</label>
-        <input type="number" id="troco-input" placeholder="Ex: 50,00" step="0.01" />
-      </div>
-      <div class="checkout-section-title">Resumo do Pedido</div>
+      <div class="checkout-section-title">Resumo do pedido</div>
       <div class="order-summary" id="checkout-summary"></div>
-      <button class="btn-confirmar" onclick="confirmarPedido()">✅ Confirmar Pedido</button>
+      <button class="btn-confirmar" onclick="confirmarPedido()">✅ Enviar para a cozinha</button>
       <button class="btn-voltar" onclick="fecharCheckout()">Voltar ao carrinho</button>
     </div>
   </div>
+</div>
+
+<!-- Sheet Fechar Conta (com pagamento) -->
+<div class="checkout-overlay" id="conta-overlay">
+  <div class="checkout-sheet">
+    <div class="checkout-header">
+      <div class="drawer-handle" style="margin-top:0;margin-bottom:12px"></div>
+      <h2>🧾 Fechar Conta</h2>
+    </div>
+    <div class="checkout-body">
+      <div class="total-geral-box">
+        <span class="total-geral-label">Total consumido</span>
+        <span class="total-geral-val" id="total-geral-val">R$ 0,00</span>
+      </div>
+      <div class="checkout-section-title">Forma de Pagamento</div>
+      <div class="pay-methods">
+        <div class="pay-btn" onclick="selecionarPagamentoFinal('Dinheiro')">
+          <div class="pay-icon">💵</div><div class="pay-label">Dinheiro</div>
+        </div>
+        <div class="pay-btn" onclick="selecionarPagamentoFinal('PIX')">
+          <div class="pay-icon">📲</div><div class="pay-label">PIX</div>
+        </div>
+        <div class="pay-btn" onclick="selecionarPagamentoFinal('Cartão')">
+          <div class="pay-icon">💳</div><div class="pay-label">Cartão</div>
+        </div>
+      </div>
+      <div class="troco-group" id="troco-final-group">
+        <label>Troco para quanto? (R$)</label>
+        <input type="number" id="troco-final-input" placeholder="Ex: 50,00" step="0.01" />
+      </div>
+      <button class="btn-fechar-confirmar" onclick="confirmarFechamento()">🧾 Fechar Conta</button>
+      <button class="btn-voltar" onclick="fecharContaSheet()">Voltar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tela Aguardando (após fechar conta) -->
+<div id="tela-aguardando">
+  <div class="aguardando-icon">⏳</div>
+  <div class="aguardando-title">Conta fechada!</div>
+  <div class="aguardando-total" id="aguardando-total"></div>
+  <div class="aguardando-pag" id="aguardando-pag"></div>
+  <div class="aguardando-sub">Aguarde o caixa confirmar<br>o pagamento. Obrigado!</div>
+  <a href="#" id="btn-whatsapp" class="btn-whatsapp-small" target="_blank">📱 Recibo via WhatsApp</a>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>

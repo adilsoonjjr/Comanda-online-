@@ -161,6 +161,36 @@ app.put('/api/pedidos/:id/status', requireAdmin, (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ─── API: Fechar Conta (cliente) ─────────────────────────────────────────────
+
+app.post('/api/conta/:mesa_numero', (req, res) => {
+  try {
+    const mesa_numero = parseInt(req.params.mesa_numero);
+    const { forma_pagamento, troco_para } = req.body;
+    if (!forma_pagamento) return res.status(400).json({ error: 'Selecione a forma de pagamento' });
+
+    const total = db.getTotalAtivoByMesa(mesa_numero);
+    if (total === 0) return res.status(400).json({ error: 'Nenhum pedido ativo nesta mesa' });
+
+    db.closeAllOrdersByMesa(mesa_numero, forma_pagamento, troco_para || 0);
+    io.to('admin').emit('conta_fechada', { mesa_numero, total, forma_pagamento, troco_para: troco_para || 0 });
+
+    res.json({ ok: true, total });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ─── API: Resetar Mesa (admin) ───────────────────────────────────────────────
+
+app.post('/api/mesas/:numero/resetar', requireAdmin, (req, res) => {
+  try {
+    const numero = parseInt(req.params.numero);
+    db.closeAllOrdersByMesa(numero, '', 0);
+    io.to(`mesa_${numero}`).emit('mesa_resetada');
+    io.to('admin').emit('mesa_resetada', { mesa_numero: numero });
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ─── API: QR Code ────────────────────────────────────────────────────────────
 
 app.get('/api/qrcode/:numero', async (req, res) => {

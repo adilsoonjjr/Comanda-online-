@@ -3,8 +3,8 @@
 const mesaNumero = parseInt(location.pathname.split('/').pop()) || 1;
 let menuItems = [];
 let cart = {};
-let formaPagamento = '';
-let pedidoAtual = null;
+let formaPagamentoFinal = '';
+let totalEnviado = 0;
 let socket = null;
 
 document.getElementById('mesa-num-header').textContent = mesaNumero;
@@ -22,10 +22,15 @@ function conectarSocket() {
   socket.emit('join_mesa', mesaNumero);
 
   socket.on('status_atualizado', (order) => {
-    if (pedidoAtual && order.id === pedidoAtual.id) {
-      pedidoAtual = order;
-      atualizarStatusBanner(order.status);
-    }
+    atualizarStatusBanner(order.status);
+  });
+
+  socket.on('mesa_resetada', () => {
+    // Admin confirmou e fechou a mesa — mostra obrigado e recarrega
+    document.getElementById('tela-aguardando').querySelector('.aguardando-icon').textContent = '🎉';
+    document.getElementById('tela-aguardando').querySelector('.aguardando-title').textContent = 'Obrigado pela visita!';
+    document.getElementById('tela-aguardando').querySelector('.aguardando-sub').textContent = 'Volte sempre!';
+    setTimeout(() => location.reload(), 3000);
   });
 }
 
@@ -131,11 +136,7 @@ function renderCarrinho() {
   const footer = document.getElementById('cart-footer');
 
   if (items.length === 0) {
-    container.innerHTML = `
-      <div class="empty-cart">
-        <div class="icon">🛒</div>
-        <p>Seu carrinho está vazio.<br>Adicione itens do cardápio!</p>
-      </div>`;
+    container.innerHTML = `<div class="empty-cart"><div class="icon">🛒</div><p>Carrinho vazio.<br>Adicione itens do cardápio!</p></div>`;
     footer.style.display = 'none';
     return;
   }
@@ -158,33 +159,10 @@ function renderCarrinho() {
   footer.style.display = 'block';
 }
 
-// ── Checkout ───────────────────────────────────────────────────────────────
+// ── Checkout (enviar pedido, sem pagamento) ────────────────────────────────
 
 function abrirCheckout() {
   fecharCarrinho();
-  formaPagamento = '';
-  document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('selected'));
-  document.getElementById('troco-group').classList.remove('visible');
-  document.getElementById('troco-input').value = '';
-  renderResumoCheckout();
-  document.getElementById('checkout-overlay').classList.add('open');
-}
-
-function fecharCheckout() {
-  document.getElementById('checkout-overlay').classList.remove('open');
-  abrirCarrinho();
-}
-
-function selecionarPagamento(forma) {
-  formaPagamento = forma;
-  document.querySelectorAll('.pay-btn').forEach(b => {
-    const label = b.querySelector('.pay-label');
-    b.classList.toggle('selected', label && label.textContent === forma);
-  });
-  document.getElementById('troco-group').classList.toggle('visible', forma === 'Dinheiro');
-}
-
-function renderResumoCheckout() {
   const items = Object.values(cart);
   const linhas = items.map(({ item, qty }) =>
     `<div class="summary-item"><span>${qty}x ${item.nome}</span><span>R$ ${fmt(item.preco * qty)}</span></div>`
@@ -193,29 +171,26 @@ function renderResumoCheckout() {
     ${linhas}
     <div class="summary-total"><span>Total</span><span>R$ ${fmt(totalCarrinho())}</span></div>
   `;
+  document.getElementById('checkout-overlay').classList.add('open');
+}
+
+function fecharCheckout() {
+  document.getElementById('checkout-overlay').classList.remove('open');
+  abrirCarrinho();
 }
 
 async function confirmarPedido() {
-  if (!formaPagamento) { alert('Selecione a forma de pagamento'); return; }
   const items = Object.values(cart);
   if (items.length === 0) { alert('Carrinho vazio'); return; }
 
-  const troco = parseFloat(document.getElementById('troco-input').value) || 0;
-  if (formaPagamento === 'Dinheiro' && troco > 0 && troco < totalCarrinho()) {
-    alert(`O valor para troco (R$ ${fmt(troco)}) deve ser maior ou igual ao total (R$ ${fmt(totalCarrinho())})`);
-    return;
-  }
-
   const body = {
     mesa_numero: mesaNumero,
-    forma_pagamento: formaPagamento,
-    troco_para: troco,
+    forma_pagamento: '',
+    troco_para: 0,
     total: totalCarrinho(),
     items: items.map(({ item, qty }) => ({
-      item_id: item.id,
-      quantidade: qty,
-      preco_unitario: item.preco,
-      nome_item: item.nome,
+      item_id: item.id, quantidade: qty,
+      preco_unitario: item.preco, nome_item: item.nome,
     })),
   };
 
@@ -226,29 +201,102 @@ async function confirmarPedido() {
       body: JSON.stringify(body),
     });
     if (!res.ok) { const d = await res.json(); alert(d.error); return; }
-    const order = await res.json();
-    pedidoAtual = order;
 
-    // Fecha checkout, limpa carrinho, volta ao cardápio
+    totalEnviado += totalCarrinho();
+    atualizarLabelFecharConta();
+
     document.getElementById('checkout-overlay').classList.remove('open');
     cart = {};
     atualizarBadgeCarrinho();
-
-    // Configura link do WhatsApp
-    const linhas = items.map(({ item, qty }) => `  ${qty}x ${item.nome} — R$ ${fmt(item.preco * qty)}`).join('\n');
-    const pag = order.troco_para > 0
-      ? `${order.forma_pagamento} (troco p/ R$ ${fmt(order.troco_para)})`
-      : order.forma_pagamento;
-    const msg = `*Comanda Digital — Mesa ${mesaNumero}*\n\n${linhas}\n\n*Total: R$ ${fmt(order.total)}*\nPagamento: ${pag}\n\n_Gerado automaticamente_`;
-    document.getElementById('btn-whatsapp').href = `https://wa.me/?text=${encodeURIComponent(msg)}`;
-
-    // Mostra status banner e toast
     atualizarStatusBanner('pendente');
-    mostrarToastPedido();
+    mostrarToast();
   } catch { alert('Erro ao enviar pedido. Tente novamente.'); }
 }
 
-// ── Status Banner ──────────────────────────────────────────────────────────
+// ── Fechar Conta ───────────────────────────────────────────────────────────
+
+async function abrirFecharConta() {
+  // Busca total real do servidor
+  try {
+    const res = await fetch(`/api/pedidos/mesa/${mesaNumero}`);
+    const pedidos = await res.json();
+    totalEnviado = pedidos.reduce((s, p) => s + p.total, 0);
+  } catch { /* usa totalEnviado local */ }
+
+  if (totalEnviado === 0 && totalCarrinho() === 0) {
+    alert('Nenhum pedido realizado ainda.'); return;
+  }
+
+  formaPagamentoFinal = '';
+  document.querySelectorAll('#conta-overlay .pay-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('troco-final-group').classList.remove('visible');
+  document.getElementById('troco-final-input').value = '';
+  document.getElementById('total-geral-val').textContent = `R$ ${fmt(totalEnviado + totalCarrinho())}`;
+  document.getElementById('conta-overlay').classList.add('open');
+}
+
+function fecharContaSheet() {
+  document.getElementById('conta-overlay').classList.remove('open');
+}
+
+function selecionarPagamentoFinal(forma) {
+  formaPagamentoFinal = forma;
+  document.querySelectorAll('#conta-overlay .pay-btn').forEach(b => {
+    b.classList.toggle('selected', b.querySelector('.pay-label').textContent === forma);
+  });
+  document.getElementById('troco-final-group').classList.toggle('visible', forma === 'Dinheiro');
+}
+
+async function confirmarFechamento() {
+  if (!formaPagamentoFinal) { alert('Selecione a forma de pagamento'); return; }
+
+  const troco = parseFloat(document.getElementById('troco-final-input').value) || 0;
+  const totalGeral = totalEnviado + totalCarrinho();
+
+  // Se há itens no carrinho, envia como pedido antes de fechar
+  if (Object.keys(cart).length > 0) {
+    const body = {
+      mesa_numero: mesaNumero, forma_pagamento: '', troco_para: 0,
+      total: totalCarrinho(),
+      items: Object.values(cart).map(({ item, qty }) => ({
+        item_id: item.id, quantidade: qty, preco_unitario: item.preco, nome_item: item.nome,
+      })),
+    };
+    await fetch('/api/pedidos', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    cart = {};
+    atualizarBadgeCarrinho();
+  }
+
+  try {
+    const res = await fetch(`/api/conta/${mesaNumero}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ forma_pagamento: formaPagamentoFinal, troco_para: troco }),
+    });
+    if (!res.ok) { const d = await res.json(); alert(d.error); return; }
+
+    fecharContaSheet();
+
+    // Configura link do WhatsApp
+    const pagLabel = troco > 0 ? `${formaPagamentoFinal} (troco p/ R$ ${fmt(troco)})` : formaPagamentoFinal;
+    const msg = `*Comanda Digital — Mesa ${mesaNumero}*\n\n*Total: R$ ${fmt(totalGeral)}*\nPagamento: ${pagLabel}\n\n_Gerado automaticamente_`;
+    document.getElementById('btn-whatsapp').href = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+
+    // Mostra tela aguardando
+    document.getElementById('aguardando-total').textContent = `R$ ${fmt(totalGeral)}`;
+    document.getElementById('aguardando-pag').textContent = pagLabel;
+    document.getElementById('tela-aguardando').classList.add('visible');
+  } catch { alert('Erro ao fechar conta. Tente novamente.'); }
+}
+
+// ── Helpers visuais ────────────────────────────────────────────────────────
+
+function atualizarLabelFecharConta() {
+  const label = document.getElementById('fechar-total-label');
+  label.textContent = totalEnviado > 0 ? `— R$ ${fmt(totalEnviado)} consumido` : '';
+}
 
 function atualizarStatusBanner(status) {
   const banner = document.getElementById('status-banner');
@@ -259,19 +307,17 @@ function atualizarStatusBanner(status) {
   dot.className = `status-dot ${status}`;
   const labels = {
     pendente:   ['⏳ Pedido recebido', 'Aguardando preparo...'],
-    preparando: ['👨‍🍳 Preparando seu pedido', 'Já estamos no fogão!'],
-    pronto:     ['✅ Pedido pronto!', 'Pode buscar ou aguardar na mesa'],
+    preparando: ['👨‍🍳 Preparando', 'Já estamos no fogão!'],
+    pronto:     ['✅ Pronto!', 'Pode buscar ou aguardar na mesa'],
   };
   [text.textContent, sub.textContent] = labels[status] || [status, ''];
 }
 
-function mostrarToastPedido() {
+function mostrarToast() {
   const toast = document.getElementById('toast-pedido');
   toast.classList.add('visible');
   setTimeout(() => toast.classList.remove('visible'), 3000);
 }
-
-// ── Helpers ────────────────────────────────────────────────────────────────
 
 function fmt(n) {
   return Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

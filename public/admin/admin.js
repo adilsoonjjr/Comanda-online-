@@ -60,9 +60,15 @@ function conectarSocket() {
     carregarPedidos();
   });
 
-  socket.on('status_atualizado', () => {
+  socket.on('conta_fechada', (data) => {
+    tocarSom();
+    mostrarToast('🧾', `Mesa ${data.mesa_numero} quer fechar a conta`,
+      `R$ ${fmt(data.total)} · ${data.forma_pagamento}${data.troco_para > 0 ? ` · troco p/ R$ ${fmt(data.troco_para)}` : ''}`);
     carregarPedidos();
   });
+
+  socket.on('status_atualizado', () => { carregarPedidos(); });
+  socket.on('mesa_resetada', () => { carregarPedidos(); });
 }
 
 // ── Tabs ───────────────────────────────────────────────────────────────────
@@ -166,7 +172,16 @@ function buildActions(p) {
     btns.push(`<button class="btn-sm btn-pronto" onclick="mudarStatus(${p.id},'pronto')">Pronto</button>`);
   if (p.status === 'pronto')
     btns.push(`<button class="btn-sm btn-finalizar" onclick="mudarStatus(${p.id},'finalizado')">Finalizar</button>`);
+  btns.push(`<button class="btn-sm btn-danger" onclick="fecharMesa(${p.mesa_numero})" title="Fechar mesa e confirmar pagamento">🧾 Fechar Mesa</button>`);
   return btns.join('');
+}
+
+async function fecharMesa(numero) {
+  if (!confirm(`Fechar Mesa ${numero} e confirmar pagamento?`)) return;
+  await fetch(`/api/mesas/${numero}/resetar`, {
+    method: 'POST', headers: { 'x-admin-token': token },
+  });
+  carregarPedidos();
 }
 
 async function mudarStatus(id, status) {

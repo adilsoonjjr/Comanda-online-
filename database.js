@@ -146,11 +146,25 @@ function createOrder(mesa_numero, forma_pagamento, troco_para, total, items) {
   return insertOrder();
 }
 
+function getTotalAtivoByMesa(mesa_numero) {
+  return db.prepare(
+    "SELECT COALESCE(SUM(total), 0) as total FROM orders WHERE mesa_numero=? AND status != 'finalizado'"
+  ).get(mesa_numero).total;
+}
+
+function closeAllOrdersByMesa(mesa_numero, forma_pagamento, troco_para) {
+  db.prepare(
+    "UPDATE orders SET status='finalizado', forma_pagamento=?, troco_para=? WHERE mesa_numero=? AND status != 'finalizado'"
+  ).run(forma_pagamento, troco_para || 0, mesa_numero);
+}
+
 function updateOrderStatus(id, status) {
   return db.prepare('UPDATE orders SET status=? WHERE id=?').run(status, id);
 }
 
 module.exports = {
+  getTotalAtivoByMesa,
+  closeAllOrdersByMesa,
   initDatabase,
   getAllTables,
   addTable,
