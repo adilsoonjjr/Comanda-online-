@@ -328,7 +328,8 @@ async function salvarMesa() {
   });
   if (!res.ok) { const d = await res.json(); alert(d.error); return; }
   fecharModal('modal-mesa');
-  carregarMesas();
+  await carregarMesas();
+  if (document.getElementById('tab-qrcodes').classList.contains('active')) carregarQRCodes();
 }
 
 // ── QR Codes ───────────────────────────────────────────────────────────────
