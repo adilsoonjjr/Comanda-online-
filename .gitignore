@@ -1,0 +1,7 @@
+node_modules/
+comanda.db
+comanda.db-shm
+comanda.db-wal
+*.db
+*.db-shm
+*.db-wal
