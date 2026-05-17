@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Comanda Digital — Admin</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242736;
+      --border: #2e3347;
+      --accent: #f97316;
+      --accent2: #fb923c;
+      --text: #e8eaf0;
+      --text2: #9ba3bf;
+      --green: #22c55e;
+      --yellow: #eab308;
+      --blue: #3b82f6;
+      --red: #ef4444;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ── Login ── */
+    #login-screen {
+      display: flex; align-items: center; justify-content: center; min-height: 100vh;
+      background: linear-gradient(135deg, #0f1117 0%, #1a1d27 100%);
+    }
+    .login-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+      padding: 48px 40px; width: 100%; max-width: 400px; text-align: center;
+    }
+    .login-logo { font-size: 48px; margin-bottom: 16px; }
+    .login-card h1 { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+    .login-card p { color: var(--text2); margin-bottom: 32px; font-size: 14px; }
+    .login-card input {
+      width: 100%; padding: 14px 16px; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text); font-size: 16px; margin-bottom: 12px;
+      outline: none; transition: border-color .2s;
+    }
+    .login-card input:focus { border-color: var(--accent); }
+    .btn-primary {
+      width: 100%; padding: 14px; background: var(--accent); border: none; border-radius: var(--radius);
+      color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; transition: background .2s;
+    }
+    .btn-primary:hover { background: var(--accent2); }
+    .login-error { color: var(--red); font-size: 13px; margin-top: 8px; }
+
+    /* ── App Shell ── */
+    #app { display: none; }
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; height: 60px; background: var(--surface); border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .topbar-logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; }
+    .topbar-logo span { font-size: 24px; }
+    .notification-bell {
+      position: relative; cursor: pointer; font-size: 22px; padding: 8px;
+      border-radius: 50%; transition: background .2s;
+    }
+    .notification-bell:hover { background: var(--surface2); }
+    .bell-badge {
+      position: absolute; top: 4px; right: 4px; background: var(--red); color: #fff;
+      font-size: 10px; font-weight: 700; border-radius: 50%; width: 16px; height: 16px;
+      display: flex; align-items: center; justify-content: center; display: none;
+    }
+    .topbar-right { display: flex; align-items: center; gap: 16px; }
+    .logout-btn {
+      padding: 7px 14px; background: transparent; border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text2); font-size: 13px; cursor: pointer; transition: all .2s;
+    }
+    .logout-btn:hover { border-color: var(--red); color: var(--red); }
+
+    .layout { display: flex; }
+    .sidebar {
+      width: 220px; min-height: calc(100vh - 60px); background: var(--surface);
+      border-right: 1px solid var(--border); padding: 20px 12px; flex-shrink: 0;
+      position: sticky; top: 60px; height: calc(100vh - 60px); overflow-y: auto;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px; padding: 11px 14px;
+      border-radius: 10px; cursor: pointer; color: var(--text2); font-size: 14px;
+      font-weight: 500; transition: all .2s; margin-bottom: 4px;
+    }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: var(--accent); color: #fff; }
+    .nav-item .icon { font-size: 18px; }
+    .nav-badge {
+      margin-left: auto; background: var(--red); color: #fff; font-size: 11px;
+      font-weight: 700; border-radius: 10px; padding: 1px 7px; display: none;
+    }
+
+    .main { flex: 1; padding: 28px; overflow-y: auto; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .page-title { font-size: 22px; font-weight: 700; margin-bottom: 24px; }
+
+    /* ── Cards ── */
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+    .order-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 20px; transition: border-color .2s;
+    }
+    .order-card:hover { border-color: var(--accent); }
+    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .mesa-badge {
+      background: var(--accent); color: #fff; font-weight: 700; font-size: 14px;
+      padding: 4px 12px; border-radius: 20px;
+    }
+    .status-badge {
+      font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+    }
+    .status-pendente { background: rgba(234,179,8,.15); color: var(--yellow); }
+    .status-preparando { background: rgba(59,130,246,.15); color: var(--blue); }
+    .status-pronto { background: rgba(34,197,94,.15); color: var(--green); }
+    .status-finalizado { background: rgba(107,114,128,.15); color: #6b7280; }
+
+    .order-items { margin-bottom: 16px; }
+    .order-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .order-item:last-child { border-bottom: none; }
+    .item-qty { color: var(--accent); font-weight: 700; margin-right: 6px; }
+    .item-price { color: var(--text2); font-size: 13px; }
+    .card-total { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid var(--border); }
+    .total-label { font-size: 13px; color: var(--text2); }
+    .total-value { font-size: 18px; font-weight: 700; color: var(--accent); }
+    .pagamento-info { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+    .card-actions { display: flex; gap: 8px; margin-top: 16px; }
+    .btn-sm {
+      flex: 1; padding: 8px 12px; border-radius: 8px; border: none; font-size: 13px;
+      font-weight: 600; cursor: pointer; transition: all .2s;
+    }
+    .btn-preparar { background: rgba(59,130,246,.15); color: var(--blue); }
+    .btn-preparar:hover { background: var(--blue); color: #fff; }
+    .btn-pronto { background: rgba(34,197,94,.15); color: var(--green); }
+    .btn-pronto:hover { background: var(--green); color: #fff; }
+    .btn-finalizar { background: rgba(107,114,128,.15); color: #9ca3af; }
+    .btn-finalizar:hover { background: #374151; color: #fff; }
+    .btn-danger { background: rgba(239,68,68,.15); color: var(--red); }
+    .btn-danger:hover { background: var(--red); color: #fff; }
+
+    .empty-state {
+      text-align: center; padding: 60px 20px; color: var(--text2);
+    }
+    .empty-state .icon { font-size: 56px; margin-bottom: 16px; }
+    .empty-state p { font-size: 16px; }
+
+    /* ── Cardápio ── */
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .btn-add {
+      padding: 9px 18px; background: var(--accent); border: none; border-radius: 8px;
+      color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .2s;
+    }
+    .btn-add:hover { background: var(--accent2); }
+
+    .menu-table { width: 100%; border-collapse: collapse; }
+    .menu-table th, .menu-table td {
+      padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px;
+    }
+    .menu-table th { color: var(--text2); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
+    .menu-table tr:hover td { background: var(--surface2); }
+    .item-emoji { font-size: 22px; }
+    .disponivel-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+    .disp-sim { background: rgba(34,197,94,.15); color: var(--green); }
+    .disp-nao { background: rgba(239,68,68,.15); color: var(--red); }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
+      z-index: 1000; align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+      padding: 32px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto;
+    }
+    .modal h2 { font-size: 20px; font-weight: 700; margin-bottom: 24px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 6px; font-weight: 500; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 11px 14px; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 14px; outline: none; transition: border-color .2s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 24px; }
+    .btn-cancel {
+      flex: 1; padding: 11px; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text2); font-size: 14px; cursor: pointer; transition: all .2s;
+    }
+    .btn-cancel:hover { border-color: var(--text2); color: var(--text); }
+    .btn-save {
+      flex: 2; padding: 11px; background: var(--accent); border: none; border-radius: 8px;
+      color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .2s;
+    }
+    .btn-save:hover { background: var(--accent2); }
+
+    /* ── Mesas ── */
+    .mesas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
+    .mesa-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 20px; text-align: center; transition: border-color .2s;
+    }
+    .mesa-card:hover { border-color: var(--accent); }
+    .mesa-num { font-size: 32px; font-weight: 800; color: var(--accent); }
+    .mesa-status { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+    /* ── QR Codes ── */
+    .qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+    .qr-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 24px; text-align: center;
+    }
+    .qr-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+    .qr-card img { width: 160px; height: 160px; border-radius: 8px; background: #fff; }
+    .qr-url { font-size: 11px; color: var(--text2); margin-top: 10px; word-break: break-all; }
+    .btn-print {
+      display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+      padding: 7px 14px; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text2); font-size: 12px; cursor: pointer; transition: all .2s;
+    }
+    .btn-print:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Toast ── */
+    #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+    .toast {
+      display: flex; align-items: center; gap: 12px; padding: 14px 18px;
+      background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--accent);
+      border-radius: var(--radius); min-width: 300px; max-width: 400px;
+      animation: slideIn .3s ease; box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    }
+    .toast-icon { font-size: 22px; }
+    .toast-body { flex: 1; }
+    .toast-title { font-weight: 700; font-size: 14px; }
+    .toast-msg { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
+
+    /* ── Stats Bar ── */
+    .stats-bar { display: flex; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 16px 20px; flex: 1; min-width: 140px;
+    }
+    .stat-label { font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+    .stat-value { font-size: 28px; font-weight: 800; }
+    .stat-orange { color: var(--accent); }
+    .stat-blue { color: var(--blue); }
+    .stat-green { color: var(--green); }
+    .stat-yellow { color: var(--yellow); }
+
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">🍽️</div>
+    <h1>Comanda Digital</h1>
+    <p>Painel do Administrador</p>
+    <input type="password" id="senha-input" placeholder="Digite a senha" />
+    <button class="btn-primary" onclick="fazerLogin()">Entrar</button>
+    <div id="login-error" class="login-error"></div>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-logo"><span>🍽️</span> Comanda Digital</div>
+    <div class="topbar-right">
+      <div class="notification-bell" onclick="toggleTab('pedidos')" title="Pedidos">
+        🔔<div class="bell-badge" id="bell-badge">0</div>
+      </div>
+      <button class="logout-btn" onclick="fazerLogout()">Sair</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <nav class="sidebar">
+      <div class="nav-item active" data-tab="pedidos" onclick="switchTab('pedidos')">
+        <span class="icon">📋</span> Pedidos
+        <span class="nav-badge" id="nav-badge-pedidos">0</span>
+      </div>
+      <div class="nav-item" data-tab="cardapio" onclick="switchTab('cardapio')">
+        <span class="icon">🍴</span> Cardápio
+      </div>
+      <div class="nav-item" data-tab="mesas" onclick="switchTab('mesas')">
+        <span class="icon">🪑</span> Mesas
+      </div>
+      <div class="nav-item" data-tab="qrcodes" onclick="switchTab('qrcodes')">
+        <span class="icon">📱</span> QR Codes
+      </div>
+    </nav>
+
+    <main class="main">
+      <!-- Pedidos -->
+      <div id="tab-pedidos" class="tab-content active">
+        <div class="stats-bar" id="stats-bar"></div>
+        <div class="section-header">
+          <h2 class="page-title" style="margin:0">Pedidos Ativos</h2>
+          <button class="btn-add" onclick="carregarPedidos()">↻ Atualizar</button>
+        </div>
+        <div class="cards-grid" id="pedidos-container"></div>
+      </div>
+
+      <!-- Cardápio -->
+      <div id="tab-cardapio" class="tab-content">
+        <div class="section-header">
+          <h2 class="page-title" style="margin:0">Cardápio</h2>
+          <button class="btn-add" onclick="abrirModalItem()">+ Novo Item</button>
+        </div>
+        <table class="menu-table">
+          <thead>
+            <tr>
+              <th></th><th>Nome</th><th>Categoria</th><th>Preço</th><th>Disponível</th><th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="menu-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Mesas -->
+      <div id="tab-mesas" class="tab-content">
+        <div class="section-header">
+          <h2 class="page-title" style="margin:0">Mesas</h2>
+          <button class="btn-add" onclick="abrirModalMesa()">+ Nova Mesa</button>
+        </div>
+        <div class="mesas-grid" id="mesas-container"></div>
+      </div>
+
+      <!-- QR Codes -->
+      <div id="tab-qrcodes" class="tab-content">
+        <div class="section-header">
+          <h2 class="page-title" style="margin:0">QR Codes das Mesas</h2>
+        </div>
+        <div class="qr-grid" id="qr-container"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Modal Item -->
+<div class="modal-overlay" id="modal-item">
+  <div class="modal">
+    <h2 id="modal-item-title">Novo Item</h2>
+    <input type="hidden" id="item-id" />
+    <div class="form-row">
+      <div class="form-group">
+        <label>Emoji</label>
+        <input type="text" id="item-emoji" placeholder="🍔" maxlength="4" />
+      </div>
+      <div class="form-group">
+        <label>Nome *</label>
+        <input type="text" id="item-nome" placeholder="Nome do item" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Descrição</label>
+      <input type="text" id="item-descricao" placeholder="Breve descrição" />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Preço (R$) *</label>
+        <input type="number" id="item-preco" step="0.01" placeholder="0,00" />
+      </div>
+      <div class="form-group">
+        <label>Categoria *</label>
+        <select id="item-categoria">
+          <option>Bebidas</option>
+          <option>Lanches</option>
+          <option>Pratos</option>
+          <option>Sobremesas</option>
+          <option>Entradas</option>
+          <option>Outros</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>
+        <input type="checkbox" id="item-disponivel" checked /> Disponível para pedidos
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fecharModal('modal-item')">Cancelar</button>
+      <button class="btn-save" onclick="salvarItem()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Mesa -->
+<div class="modal-overlay" id="modal-mesa">
+  <div class="modal">
+    <h2>Nova Mesa</h2>
+    <div class="form-group">
+      <label>Número da Mesa *</label>
+      <input type="number" id="mesa-numero" placeholder="Ex: 6" min="1" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fecharModal('modal-mesa')">Cancelar</button>
+      <button class="btn-save" onclick="salvarMesa()">Criar Mesa</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

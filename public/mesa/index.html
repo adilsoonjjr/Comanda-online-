@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Cardápio Digital</title>
+  <style>
+    :root {
+      --bg: #fef9f0;
+      --surface: #ffffff;
+      --border: #f0e8d8;
+      --accent: #f97316;
+      --accent2: #ea580c;
+      --text: #1c1917;
+      --text2: #78716c;
+      --green: #16a34a;
+      --blue: #2563eb;
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ── Header ── */
+    .header {
+      background: var(--accent); color: #fff; padding: 16px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .header-title { font-size: 20px; font-weight: 800; }
+    .header-sub { font-size: 12px; opacity: .8; margin-top: 2px; }
+    .cart-btn {
+      position: relative; background: rgba(255,255,255,.2); border: none;
+      border-radius: 50%; width: 48px; height: 48px; font-size: 22px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; color: #fff;
+    }
+    .cart-count {
+      position: absolute; top: -4px; right: -4px; background: #fff; color: var(--accent);
+      font-size: 11px; font-weight: 800; border-radius: 50%; width: 20px; height: 20px;
+      display: flex; align-items: center; justify-content: center; display: none;
+    }
+
+    /* ── Status Bar ── */
+    .status-bar {
+      display: none; background: #fff; border-bottom: 1px solid var(--border);
+      padding: 12px 20px; align-items: center; gap: 12px;
+    }
+    .status-bar.visible { display: flex; }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .status-dot.pendente { background: #eab308; }
+    .status-dot.preparando { background: var(--blue); animation: pulse 1.5s infinite; }
+    .status-dot.pronto { background: var(--green); }
+    @keyframes pulse { 0%,100%{ opacity:1 } 50%{ opacity:.4 } }
+    .status-text { font-size: 14px; font-weight: 600; }
+    .status-sub { font-size: 12px; color: var(--text2); }
+
+    /* ── Categories ── */
+    .cats-wrap { overflow-x: auto; padding: 16px 20px 8px; display: flex; gap: 8px; scrollbar-width: none; }
+    .cats-wrap::-webkit-scrollbar { display: none; }
+    .cat-btn {
+      flex-shrink: 0; padding: 7px 16px; border-radius: 20px; border: 1.5px solid var(--border);
+      background: var(--surface); font-size: 13px; font-weight: 600; color: var(--text2);
+      cursor: pointer; transition: all .2s; white-space: nowrap;
+    }
+    .cat-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* ── Menu Grid ── */
+    .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; padding: 8px 16px 100px; }
+
+    .item-card {
+      background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius);
+      overflow: hidden; cursor: pointer; transition: all .2s; active: scale(.97);
+    }
+    .item-card:active { transform: scale(.97); }
+    .item-emoji-wrap {
+      background: linear-gradient(135deg, #fff8f0, #fef3e2); font-size: 52px;
+      text-align: center; padding: 20px 12px 10px; line-height: 1;
+    }
+    .item-body { padding: 10px 12px 14px; }
+    .item-name { font-size: 14px; font-weight: 700; margin-bottom: 3px; line-height: 1.3; }
+    .item-desc { font-size: 11px; color: var(--text2); margin-bottom: 8px; line-height: 1.4; }
+    .item-footer { display: flex; align-items: center; justify-content: space-between; }
+    .item-price { font-size: 15px; font-weight: 800; color: var(--accent); }
+    .add-btn {
+      width: 30px; height: 30px; border-radius: 50%; background: var(--accent); border: none;
+      color: #fff; font-size: 20px; cursor: pointer; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; transition: background .2s;
+    }
+    .add-btn:active { background: var(--accent2); }
+    .item-card.no-stock { opacity: .5; pointer-events: none; }
+
+    /* ── Cart Drawer ── */
+    .drawer-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200;
+    }
+    .drawer-overlay.open { display: block; }
+    .drawer {
+      position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface);
+      border-radius: 24px 24px 0 0; padding: 0 0 env(safe-area-inset-bottom,16px);
+      max-height: 85vh; overflow-y: auto; transform: translateY(100%);
+      transition: transform .35s cubic-bezier(.32,1,.65,1); z-index: 201;
+    }
+    .drawer.open { transform: translateY(0); }
+    .drawer-handle { width: 40px; height: 4px; background: #e5e7eb; border-radius: 2px; margin: 14px auto 0; }
+    .drawer-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .drawer-title { font-size: 18px; font-weight: 800; }
+    .drawer-close { font-size: 20px; cursor: pointer; padding: 4px; color: var(--text2); }
+    .cart-items { padding: 12px 20px; }
+    .cart-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .cart-item:last-child { border-bottom: none; }
+    .cart-item-emoji { font-size: 28px; }
+    .cart-item-info { flex: 1; }
+    .cart-item-name { font-size: 14px; font-weight: 600; }
+    .cart-item-price { font-size: 13px; color: var(--text2); margin-top: 2px; }
+    .qty-ctrl { display: flex; align-items: center; gap: 8px; }
+    .qty-btn {
+      width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--border);
+      background: #fff; font-size: 16px; cursor: pointer; display: flex;
+      align-items: center; justify-content: center; font-weight: 700; transition: all .15s;
+    }
+    .qty-btn:active { background: var(--border); }
+    .qty-num { font-size: 15px; font-weight: 700; min-width: 20px; text-align: center; }
+    .cart-footer { padding: 16px 20px; border-top: 2px solid var(--border); }
+    .cart-total-row { display: flex; justify-content: space-between; font-size: 18px; font-weight: 800; margin-bottom: 14px; }
+    .btn-checkout {
+      width: 100%; padding: 16px; background: var(--accent); border: none; border-radius: var(--radius);
+      color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; transition: background .2s;
+    }
+    .btn-checkout:active { background: var(--accent2); }
+    .empty-cart { text-align: center; padding: 40px 20px; color: var(--text2); }
+    .empty-cart .icon { font-size: 48px; margin-bottom: 12px; }
+
+    /* ── Checkout Modal ── */
+    .checkout-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 300;
+      align-items: flex-end; justify-content: center;
+    }
+    .checkout-overlay.open { display: flex; }
+    .checkout-sheet {
+      background: var(--surface); border-radius: 24px 24px 0 0; width: 100%; max-width: 540px;
+      padding: 0 0 env(safe-area-inset-bottom,20px); max-height: 90vh; overflow-y: auto;
+    }
+    .checkout-header { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); }
+    .checkout-header h2 { font-size: 20px; font-weight: 800; }
+    .checkout-body { padding: 20px; }
+    .checkout-section-title { font-size: 13px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px; }
+    .pay-methods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+    .pay-btn {
+      padding: 16px 8px; border: 2px solid var(--border); border-radius: var(--radius);
+      background: #fff; cursor: pointer; text-align: center; transition: all .2s;
+    }
+    .pay-btn .pay-icon { font-size: 28px; margin-bottom: 4px; }
+    .pay-btn .pay-label { font-size: 13px; font-weight: 700; color: var(--text); }
+    .pay-btn.selected { border-color: var(--accent); background: #fff8f3; }
+    .troco-group { margin-bottom: 20px; display: none; }
+    .troco-group.visible { display: block; }
+    .troco-group label { font-size: 14px; font-weight: 600; display: block; margin-bottom: 8px; }
+    .troco-group input {
+      width: 100%; padding: 13px 16px; border: 1.5px solid var(--border); border-radius: var(--radius);
+      font-size: 16px; outline: none; transition: border-color .2s;
+    }
+    .troco-group input:focus { border-color: var(--accent); }
+    .order-summary { background: #fafafa; border-radius: var(--radius); padding: 16px; margin-bottom: 20px; }
+    .summary-item { display: flex; justify-content: space-between; font-size: 14px; padding: 4px 0; }
+    .summary-total { display: flex; justify-content: space-between; font-size: 16px; font-weight: 800; padding-top: 10px; border-top: 1px solid var(--border); margin-top: 6px; }
+    .btn-confirmar {
+      width: 100%; padding: 16px; background: var(--accent); border: none; border-radius: var(--radius);
+      color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; transition: background .2s; margin-bottom: 10px;
+    }
+    .btn-confirmar:active { background: var(--accent2); }
+    .btn-voltar {
+      width: 100%; padding: 14px; background: #f5f5f5; border: none; border-radius: var(--radius);
+      color: var(--text2); font-size: 15px; font-weight: 600; cursor: pointer;
+    }
+
+    /* ── Confirmação ── */
+    #confirmacao { display: none; padding: 40px 24px; text-align: center; min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; }
+    #confirmacao.visible { display: flex; }
+    .confirm-icon { font-size: 72px; margin-bottom: 20px; }
+    .confirm-title { font-size: 26px; font-weight: 800; margin-bottom: 8px; }
+    .confirm-sub { font-size: 15px; color: var(--text2); margin-bottom: 32px; }
+    .status-tracker { display: flex; align-items: center; justify-content: center; gap: 0; margin-bottom: 36px; }
+    .tracker-step { text-align: center; }
+    .tracker-dot {
+      width: 36px; height: 36px; border-radius: 50%; border: 3px solid var(--border);
+      background: #fff; display: flex; align-items: center; justify-content: center;
+      font-size: 16px; margin: 0 auto 6px;
+    }
+    .tracker-dot.done { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .tracker-dot.active { border-color: var(--accent); background: #fff8f3; }
+    .tracker-label { font-size: 11px; color: var(--text2); font-weight: 500; }
+    .tracker-line { width: 40px; height: 3px; background: var(--border); margin-bottom: 22px; flex-shrink: 0; }
+    .tracker-line.done { background: var(--accent); }
+    .btn-whatsapp {
+      display: flex; align-items: center; gap: 10px; padding: 14px 28px;
+      background: #25D366; border: none; border-radius: var(--radius); color: #fff;
+      font-size: 15px; font-weight: 700; cursor: pointer; margin: 0 auto 12px; text-decoration: none;
+    }
+    .btn-novo-pedido {
+      padding: 12px 28px; background: #f5f5f5; border: none; border-radius: var(--radius);
+      color: var(--text2); font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+
+    #menu-screen { display: block; }
+  </style>
+</head>
+<body>
+
+<!-- Menu Screen -->
+<div id="menu-screen">
+  <header class="header">
+    <div>
+      <div class="header-title">🍽️ Mesa <span id="mesa-num-header">—</span></div>
+      <div class="header-sub">Cardápio Digital</div>
+    </div>
+    <button class="cart-btn" onclick="abrirCarrinho()">
+      🛒<span class="cart-count" id="cart-count">0</span>
+    </button>
+  </header>
+
+  <div class="status-bar" id="status-bar">
+    <div class="status-dot pendente" id="status-dot"></div>
+    <div>
+      <div class="status-text" id="status-text">Pedido recebido</div>
+      <div class="status-sub" id="status-sub">Aguardando preparo</div>
+    </div>
+  </div>
+
+  <div class="cats-wrap" id="cats-wrap"></div>
+  <div class="menu-grid" id="menu-grid"></div>
+</div>
+
+<!-- Confirmação -->
+<div id="confirmacao">
+  <div class="confirm-icon">🎉</div>
+  <div class="confirm-title">Pedido Enviado!</div>
+  <div class="confirm-sub">Acompanhe o status abaixo</div>
+
+  <div class="status-tracker" id="status-tracker">
+    <div class="tracker-step">
+      <div class="tracker-dot done" id="t-pendente">📬</div>
+      <div class="tracker-label">Recebido</div>
+    </div>
+    <div class="tracker-line" id="line-1"></div>
+    <div class="tracker-step">
+      <div class="tracker-dot" id="t-preparando">👨‍🍳</div>
+      <div class="tracker-label">Preparando</div>
+    </div>
+    <div class="tracker-line" id="line-2"></div>
+    <div class="tracker-step">
+      <div class="tracker-dot" id="t-pronto">✅</div>
+      <div class="tracker-label">Pronto!</div>
+    </div>
+  </div>
+
+  <a href="#" id="btn-whatsapp" class="btn-whatsapp" target="_blank">
+    <span style="font-size:20px">📱</span> Recibo via WhatsApp
+  </a>
+  <button class="btn-novo-pedido" onclick="novosPedidos()">+ Adicionar mais itens</button>
+</div>
+
+<!-- Cart Drawer -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="fecharCarrinho()"></div>
+<div class="drawer" id="cart-drawer">
+  <div class="drawer-handle"></div>
+  <div class="drawer-header">
+    <span class="drawer-title">🛒 Seu Carrinho</span>
+    <span class="drawer-close" onclick="fecharCarrinho()">✕</span>
+  </div>
+  <div class="cart-items" id="cart-items"></div>
+  <div class="cart-footer" id="cart-footer" style="display:none">
+    <div class="cart-total-row">
+      <span>Total</span>
+      <span id="cart-total-val">R$ 0,00</span>
+    </div>
+    <button class="btn-checkout" onclick="abrirCheckout()">Finalizar Pedido →</button>
+  </div>
+</div>
+
+<!-- Checkout Sheet -->
+<div class="checkout-overlay" id="checkout-overlay">
+  <div class="checkout-sheet">
+    <div class="checkout-header">
+      <div class="drawer-handle" style="margin-top:0;margin-bottom:12px"></div>
+      <h2>Finalizar Pedido</h2>
+    </div>
+    <div class="checkout-body">
+      <div class="checkout-section-title">Forma de Pagamento</div>
+      <div class="pay-methods">
+        <div class="pay-btn" onclick="selecionarPagamento('Dinheiro')">
+          <div class="pay-icon">💵</div><div class="pay-label">Dinheiro</div>
+        </div>
+        <div class="pay-btn" onclick="selecionarPagamento('PIX')">
+          <div class="pay-icon">📲</div><div class="pay-label">PIX</div>
+        </div>
+        <div class="pay-btn" onclick="selecionarPagamento('Cartão')">
+          <div class="pay-icon">💳</div><div class="pay-label">Cartão</div>
+        </div>
+      </div>
+
+      <div class="troco-group" id="troco-group">
+        <label>Troco para quanto? (R$)</label>
+        <input type="number" id="troco-input" placeholder="Ex: 50,00" step="0.01" />
+      </div>
+
+      <div class="checkout-section-title">Resumo do Pedido</div>
+      <div class="order-summary" id="checkout-summary"></div>
+
+      <button class="btn-confirmar" onclick="confirmarPedido()">✅ Confirmar Pedido</button>
+      <button class="btn-voltar" onclick="fecharCheckout()">Voltar ao carrinho</button>
+    </div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="mesa.js"></script>
+</body>
+</html>
