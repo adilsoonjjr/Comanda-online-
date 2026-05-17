@@ -61,29 +61,7 @@ async function initDatabase() {
     console.log('✅ Mesas criadas (1-5)');
   }
 
-  // Seed menu
-  const mc = await get('SELECT COUNT(*) as c FROM menu_items');
-  if (mc.c === 0) {
-    const items = [
-      ['Coca-Cola', 'Lata 350ml gelada', 6.0, 'Bebidas', '🥤'],
-      ['Suco de Laranja', 'Natural, 400ml', 8.0, 'Bebidas', '🍊'],
-      ['Água', 'Mineral sem gás 500ml', 3.0, 'Bebidas', '💧'],
-      ['Cerveja', 'Long neck 355ml', 9.0, 'Bebidas', '🍺'],
-      ['X-Burguer', 'Pão, carne 180g, queijo, alface, tomate', 25.0, 'Lanches', '🍔'],
-      ['X-Salada', 'Pão, carne 180g, queijo, alface, tomate, maionese especial', 22.0, 'Lanches', '🥗'],
-      ['Hot Dog', 'Salsicha, pão, catchup, mostarda, batata palha', 18.0, 'Lanches', '🌭'],
-      ['Frango Grelhado', 'Filé de frango grelhado com arroz, feijão e salada', 35.0, 'Pratos', '🍗'],
-      ['Filé de Tilápia', 'Tilápia grelhada com legumes no vapor e arroz', 38.0, 'Pratos', '🐟'],
-      ['Macarrão', 'Macarrão ao sugo com queijo parmesão', 28.0, 'Pratos', '🍝'],
-      ['Pudim', 'Pudim de leite condensado artesanal', 12.0, 'Sobremesas', '🍮'],
-      ['Açaí', 'Açaí 500ml com granola e banana', 18.0, 'Sobremesas', '🫐'],
-    ];
-    for (const [nome, desc, preco, cat, emoji] of items) {
-      await run('INSERT INTO menu_items (nome, descricao, preco, categoria, emoji) VALUES (?,?,?,?,?)',
-        [nome, desc, preco, cat, emoji]);
-    }
-    console.log(`✅ Cardápio criado com ${items.length} itens`);
-  }
+  console.log('✅ Cardápio vazio — adicione os produtos pelo painel Admin');
 }
 
 // ── Tables ─────────────────────────────────────────────────────────────────
