@@ -381,15 +381,9 @@
   <div class="modal">
     <h2 id="modal-item-title">Novo Item</h2>
     <input type="hidden" id="item-id" />
-    <div class="form-row">
-      <div class="form-group">
-        <label>Emoji</label>
-        <input type="text" id="item-emoji" placeholder="🍔" maxlength="4" />
-      </div>
-      <div class="form-group">
-        <label>Nome *</label>
-        <input type="text" id="item-nome" placeholder="Nome do item" />
-      </div>
+    <div class="form-group">
+      <label>Nome *</label>
+      <input type="text" id="item-nome" placeholder="Nome do item" />
     </div>
     <div class="form-group">
       <label>Descrição</label>
@@ -403,12 +397,10 @@
       <div class="form-group">
         <label>Categoria *</label>
         <select id="item-categoria">
+          <option>Prato</option>
           <option>Bebidas</option>
-          <option>Lanches</option>
-          <option>Pratos</option>
-          <option>Sobremesas</option>
-          <option>Entradas</option>
-          <option>Outros</option>
+          <option>Petisco</option>
+          <option>Sobremesa</option>
         </select>
       </div>
     </div>

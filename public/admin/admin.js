@@ -223,12 +223,12 @@ async function carregarMenu() {
 function abrirModalItem(id) {
   document.getElementById('modal-item-title').textContent = 'Novo Item';
   document.getElementById('item-id').value = '';
-  document.getElementById('item-emoji').value = '';
   document.getElementById('item-nome').value = '';
   document.getElementById('item-descricao').value = '';
   document.getElementById('item-preco').value = '';
-  document.getElementById('item-categoria').value = 'Bebidas';
+  document.getElementById('item-categoria').value = 'Prato';
   document.getElementById('item-disponivel').checked = true;
+  document.getElementById('item-prato-dia').checked = false;
   document.getElementById('modal-item').classList.add('open');
 }
 
@@ -237,7 +237,6 @@ function editarItem(id) {
   if (!item) return;
   document.getElementById('modal-item-title').textContent = 'Editar Item';
   document.getElementById('item-id').value = item.id;
-  document.getElementById('item-emoji').value = item.emoji;
   document.getElementById('item-nome').value = item.nome;
   document.getElementById('item-descricao').value = item.descricao;
   document.getElementById('item-preco').value = item.preco;
@@ -254,7 +253,7 @@ async function salvarItem() {
     descricao: document.getElementById('item-descricao').value,
     preco: document.getElementById('item-preco').value,
     categoria: document.getElementById('item-categoria').value,
-    emoji: document.getElementById('item-emoji').value || '🍽️',
+    emoji: '🍽️',
     disponivel: document.getElementById('item-disponivel').checked,
     prato_do_dia: document.getElementById('item-prato-dia').checked,
   };
