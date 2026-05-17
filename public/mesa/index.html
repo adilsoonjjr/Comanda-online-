@@ -15,6 +15,7 @@
       --text2: #78716c;
       --green: #16a34a;
       --blue: #2563eb;
+      --yellow: #d97706;
       --radius: 14px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -36,25 +37,64 @@
     .cart-count {
       position: absolute; top: -4px; right: -4px; background: #fff; color: var(--accent);
       font-size: 11px; font-weight: 800; border-radius: 50%; width: 20px; height: 20px;
-      display: flex; align-items: center; justify-content: center; display: none;
+      display: none; align-items: center; justify-content: center;
     }
 
-    /* ── Status Bar ── */
-    .status-bar {
-      display: none; background: #fff; border-bottom: 1px solid var(--border);
-      padding: 12px 20px; align-items: center; gap: 12px;
+    /* ── Status Banner (após pedido) ── */
+    .status-banner {
+      display: none; background: #fff; border-bottom: 2px solid var(--border);
+      padding: 14px 20px;
     }
-    .status-bar.visible { display: flex; }
-    .status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .status-banner.visible { display: block; }
+    .status-banner-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .status-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
     .status-dot.pendente { background: #eab308; }
     .status-dot.preparando { background: var(--blue); animation: pulse 1.5s infinite; }
     .status-dot.pronto { background: var(--green); }
-    @keyframes pulse { 0%,100%{ opacity:1 } 50%{ opacity:.4 } }
-    .status-text { font-size: 14px; font-weight: 600; }
-    .status-sub { font-size: 12px; color: var(--text2); }
+    @keyframes pulse { 0%,100%{ opacity:1 } 50%{ opacity:.3 } }
+    .status-text { font-size: 15px; font-weight: 700; }
+    .status-sub { font-size: 12px; color: var(--text2); margin-left: 21px; margin-bottom: 10px; }
+    .btn-whatsapp-small {
+      display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px;
+      background: #25D366; border: none; border-radius: 8px; color: #fff;
+      font-size: 13px; font-weight: 700; cursor: pointer; text-decoration: none;
+    }
+
+    /* ── Toast de confirmação ── */
+    .toast-pedido {
+      display: none; position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
+      background: var(--green); color: #fff; padding: 14px 24px; border-radius: 40px;
+      font-size: 15px; font-weight: 700; z-index: 500; white-space: nowrap;
+      box-shadow: 0 4px 20px rgba(0,0,0,.2);
+      animation: fadeDown .3s ease;
+    }
+    .toast-pedido.visible { display: block; }
+    @keyframes fadeDown { from { opacity:0; transform: translateX(-50%) translateY(-10px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
+
+    /* ── Prato do Dia ── */
+    .prato-dia-section { padding: 14px 16px 0; }
+    .prato-dia-card {
+      background: linear-gradient(135deg, #fff8ec, #fff3db);
+      border: 2px solid #f59e0b; border-radius: var(--radius);
+      padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    }
+    .prato-dia-badge {
+      display: inline-block; background: #f59e0b; color: #fff;
+      font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 20px;
+      text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px;
+    }
+    .prato-dia-nome { font-size: 16px; font-weight: 800; margin-bottom: 3px; }
+    .prato-dia-desc { font-size: 12px; color: var(--text2); margin-bottom: 8px; }
+    .prato-dia-price { font-size: 18px; font-weight: 800; color: var(--yellow); }
+    .prato-dia-add {
+      width: 40px; height: 40px; border-radius: 50%; background: var(--accent); border: none;
+      color: #fff; font-size: 24px; cursor: pointer; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; transition: background .2s;
+    }
+    .prato-dia-add:active { background: var(--accent2); }
 
     /* ── Categories ── */
-    .cats-wrap { overflow-x: auto; padding: 16px 20px 8px; display: flex; gap: 8px; scrollbar-width: none; }
+    .cats-wrap { overflow-x: auto; padding: 14px 16px 8px; display: flex; gap: 8px; scrollbar-width: none; }
     .cats-wrap::-webkit-scrollbar { display: none; }
     .cat-btn {
       flex-shrink: 0; padding: 7px 16px; border-radius: 20px; border: 1.5px solid var(--border);
@@ -68,25 +108,20 @@
 
     .item-card {
       background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius);
-      overflow: hidden; cursor: pointer; transition: all .2s; active: scale(.97);
+      overflow: hidden; transition: all .2s;
     }
     .item-card:active { transform: scale(.97); }
-    .item-emoji-wrap {
-      background: linear-gradient(135deg, #fff8f0, #fef3e2); font-size: 52px;
-      text-align: center; padding: 20px 12px 10px; line-height: 1;
-    }
-    .item-body { padding: 10px 12px 14px; }
-    .item-name { font-size: 14px; font-weight: 700; margin-bottom: 3px; line-height: 1.3; }
-    .item-desc { font-size: 11px; color: var(--text2); margin-bottom: 8px; line-height: 1.4; }
+    .item-body { padding: 14px 12px; }
+    .item-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; line-height: 1.3; }
+    .item-desc { font-size: 11px; color: var(--text2); margin-bottom: 10px; line-height: 1.4; }
     .item-footer { display: flex; align-items: center; justify-content: space-between; }
     .item-price { font-size: 15px; font-weight: 800; color: var(--accent); }
     .add-btn {
-      width: 30px; height: 30px; border-radius: 50%; background: var(--accent); border: none;
-      color: #fff; font-size: 20px; cursor: pointer; display: flex; align-items: center;
+      width: 32px; height: 32px; border-radius: 50%; background: var(--accent); border: none;
+      color: #fff; font-size: 22px; cursor: pointer; display: flex; align-items: center;
       justify-content: center; flex-shrink: 0; transition: background .2s;
     }
     .add-btn:active { background: var(--accent2); }
-    .item-card.no-stock { opacity: .5; pointer-events: none; }
 
     /* ── Cart Drawer ── */
     .drawer-overlay {
@@ -107,7 +142,6 @@
     .cart-items { padding: 12px 20px; }
     .cart-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
     .cart-item:last-child { border-bottom: none; }
-    .cart-item-emoji { font-size: 28px; }
     .cart-item-info { flex: 1; }
     .cart-item-name { font-size: 14px; font-weight: 600; }
     .cart-item-price { font-size: 13px; color: var(--text2); margin-top: 2px; }
@@ -129,7 +163,7 @@
     .empty-cart { text-align: center; padding: 40px 20px; color: var(--text2); }
     .empty-cart .icon { font-size: 48px; margin-bottom: 12px; }
 
-    /* ── Checkout Modal ── */
+    /* ── Checkout Sheet ── */
     .checkout-overlay {
       display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 300;
       align-items: flex-end; justify-content: center;
@@ -171,92 +205,41 @@
       width: 100%; padding: 14px; background: #f5f5f5; border: none; border-radius: var(--radius);
       color: var(--text2); font-size: 15px; font-weight: 600; cursor: pointer;
     }
-
-    /* ── Confirmação ── */
-    #confirmacao { display: none; padding: 40px 24px; text-align: center; min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; }
-    #confirmacao.visible { display: flex; }
-    .confirm-icon { font-size: 72px; margin-bottom: 20px; }
-    .confirm-title { font-size: 26px; font-weight: 800; margin-bottom: 8px; }
-    .confirm-sub { font-size: 15px; color: var(--text2); margin-bottom: 32px; }
-    .status-tracker { display: flex; align-items: center; justify-content: center; gap: 0; margin-bottom: 36px; }
-    .tracker-step { text-align: center; }
-    .tracker-dot {
-      width: 36px; height: 36px; border-radius: 50%; border: 3px solid var(--border);
-      background: #fff; display: flex; align-items: center; justify-content: center;
-      font-size: 16px; margin: 0 auto 6px;
-    }
-    .tracker-dot.done { background: var(--accent); border-color: var(--accent); color: #fff; }
-    .tracker-dot.active { border-color: var(--accent); background: #fff8f3; }
-    .tracker-label { font-size: 11px; color: var(--text2); font-weight: 500; }
-    .tracker-line { width: 40px; height: 3px; background: var(--border); margin-bottom: 22px; flex-shrink: 0; }
-    .tracker-line.done { background: var(--accent); }
-    .btn-whatsapp {
-      display: flex; align-items: center; gap: 10px; padding: 14px 28px;
-      background: #25D366; border: none; border-radius: var(--radius); color: #fff;
-      font-size: 15px; font-weight: 700; cursor: pointer; margin: 0 auto 12px; text-decoration: none;
-    }
-    .btn-novo-pedido {
-      padding: 12px 28px; background: #f5f5f5; border: none; border-radius: var(--radius);
-      color: var(--text2); font-size: 14px; font-weight: 600; cursor: pointer;
-    }
-
-    #menu-screen { display: block; }
   </style>
 </head>
 <body>
 
-<!-- Menu Screen -->
-<div id="menu-screen">
-  <header class="header">
-    <div>
-      <div class="header-title">🍽️ Mesa <span id="mesa-num-header">—</span></div>
-      <div class="header-sub">Cardápio Digital</div>
-    </div>
-    <button class="cart-btn" onclick="abrirCarrinho()">
-      🛒<span class="cart-count" id="cart-count">0</span>
-    </button>
-  </header>
+<header class="header">
+  <div>
+    <div class="header-title">🍽️ Mesa <span id="mesa-num-header">—</span></div>
+    <div class="header-sub">Cardápio Digital</div>
+  </div>
+  <button class="cart-btn" onclick="abrirCarrinho()">
+    🛒<span class="cart-count" id="cart-count">0</span>
+  </button>
+</header>
 
-  <div class="status-bar" id="status-bar">
+<!-- Status Banner (aparece após pedido) -->
+<div class="status-banner" id="status-banner">
+  <div class="status-banner-top">
     <div class="status-dot pendente" id="status-dot"></div>
-    <div>
-      <div class="status-text" id="status-text">Pedido recebido</div>
-      <div class="status-sub" id="status-sub">Aguardando preparo</div>
-    </div>
+    <div class="status-text" id="status-text">Pedido recebido</div>
   </div>
-
-  <div class="cats-wrap" id="cats-wrap"></div>
-  <div class="menu-grid" id="menu-grid"></div>
+  <div class="status-sub" id="status-sub">Aguardando preparo</div>
+  <a href="#" id="btn-whatsapp" class="btn-whatsapp-small" target="_blank">📱 Recibo via WhatsApp</a>
 </div>
 
-<!-- Confirmação -->
-<div id="confirmacao">
-  <div class="confirm-icon">🎉</div>
-  <div class="confirm-title">Pedido Enviado!</div>
-  <div class="confirm-sub">Acompanhe o status abaixo</div>
+<!-- Prato do Dia -->
+<div class="prato-dia-section" id="prato-dia-section" style="display:none"></div>
 
-  <div class="status-tracker" id="status-tracker">
-    <div class="tracker-step">
-      <div class="tracker-dot done" id="t-pendente">📬</div>
-      <div class="tracker-label">Recebido</div>
-    </div>
-    <div class="tracker-line" id="line-1"></div>
-    <div class="tracker-step">
-      <div class="tracker-dot" id="t-preparando">👨‍🍳</div>
-      <div class="tracker-label">Preparando</div>
-    </div>
-    <div class="tracker-line" id="line-2"></div>
-    <div class="tracker-step">
-      <div class="tracker-dot" id="t-pronto">✅</div>
-      <div class="tracker-label">Pronto!</div>
-    </div>
-  </div>
+<!-- Categorias -->
+<div class="cats-wrap" id="cats-wrap"></div>
 
-  <a href="#" id="btn-whatsapp" class="btn-whatsapp" target="_blank">
-    <span style="font-size:20px">📱</span> Recibo via WhatsApp
-  </a>
-  <button class="btn-novo-pedido" onclick="novosPedidos()">+ Adicionar mais itens</button>
-</div>
+<!-- Grid do cardápio -->
+<div class="menu-grid" id="menu-grid"></div>
+
+<!-- Toast de confirmação -->
+<div class="toast-pedido" id="toast-pedido">✅ Pedido enviado com sucesso!</div>
 
 <!-- Cart Drawer -->
 <div class="drawer-overlay" id="drawer-overlay" onclick="fecharCarrinho()"></div>
@@ -296,15 +279,12 @@
           <div class="pay-icon">💳</div><div class="pay-label">Cartão</div>
         </div>
       </div>
-
       <div class="troco-group" id="troco-group">
         <label>Troco para quanto? (R$)</label>
         <input type="number" id="troco-input" placeholder="Ex: 50,00" step="0.01" />
       </div>
-
       <div class="checkout-section-title">Resumo do Pedido</div>
       <div class="order-summary" id="checkout-summary"></div>
-
       <button class="btn-confirmar" onclick="confirmarPedido()">✅ Confirmar Pedido</button>
       <button class="btn-voltar" onclick="fecharCheckout()">Voltar ao carrinho</button>
     </div>

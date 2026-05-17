@@ -18,13 +18,14 @@ function initDatabase() {
     );
 
     CREATE TABLE IF NOT EXISTS menu_items (
-      id         INTEGER PRIMARY KEY AUTOINCREMENT,
-      nome       TEXT NOT NULL,
-      descricao  TEXT DEFAULT '',
-      preco      REAL NOT NULL,
-      categoria  TEXT NOT NULL,
-      emoji      TEXT DEFAULT '🍽️',
-      disponivel INTEGER NOT NULL DEFAULT 1
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      nome         TEXT NOT NULL,
+      descricao    TEXT DEFAULT '',
+      preco        REAL NOT NULL,
+      categoria    TEXT NOT NULL,
+      emoji        TEXT DEFAULT '🍽️',
+      disponivel   INTEGER NOT NULL DEFAULT 1,
+      prato_do_dia INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS orders (
@@ -48,6 +49,12 @@ function initDatabase() {
       nome_item      TEXT NOT NULL
     );
   `);
+
+  // Migration: add prato_do_dia column if missing (existing databases)
+  const cols = db.prepare('PRAGMA table_info(menu_items)').all();
+  if (!cols.find(c => c.name === 'prato_do_dia')) {
+    db.exec('ALTER TABLE menu_items ADD COLUMN prato_do_dia INTEGER NOT NULL DEFAULT 0');
+  }
 
   const tableCount = db.prepare('SELECT COUNT(*) as c FROM tables').get().c;
   if (tableCount === 0) {
@@ -79,15 +86,15 @@ function getAllMenuItems() {
 function getAvailableMenuItems() {
   return db.prepare('SELECT * FROM menu_items WHERE disponivel=1 ORDER BY categoria, nome').all();
 }
-function addMenuItem(nome, descricao, preco, categoria, emoji) {
+function addMenuItem(nome, descricao, preco, categoria, emoji, prato_do_dia) {
   return db.prepare(
-    'INSERT INTO menu_items (nome, descricao, preco, categoria, emoji) VALUES (?,?,?,?,?)'
-  ).run(nome, descricao, preco, categoria, emoji);
+    'INSERT INTO menu_items (nome, descricao, preco, categoria, emoji, prato_do_dia) VALUES (?,?,?,?,?,?)'
+  ).run(nome, descricao, preco, categoria, emoji, prato_do_dia ? 1 : 0);
 }
-function updateMenuItem(id, nome, descricao, preco, categoria, emoji, disponivel) {
+function updateMenuItem(id, nome, descricao, preco, categoria, emoji, disponivel, prato_do_dia) {
   return db.prepare(
-    'UPDATE menu_items SET nome=?, descricao=?, preco=?, categoria=?, emoji=?, disponivel=? WHERE id=?'
-  ).run(nome, descricao, preco, categoria, emoji, disponivel ? 1 : 0, id);
+    'UPDATE menu_items SET nome=?, descricao=?, preco=?, categoria=?, emoji=?, disponivel=?, prato_do_dia=? WHERE id=?'
+  ).run(nome, descricao, preco, categoria, emoji, disponivel ? 1 : 0, prato_do_dia ? 1 : 0, id);
 }
 function deleteMenuItem(id) {
   return db.prepare('DELETE FROM menu_items WHERE id=?').run(id);

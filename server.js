@@ -67,19 +67,19 @@ app.get('/api/menu', (req, res) => {
 
 app.post('/api/menu', requireAdmin, (req, res) => {
   try {
-    const { nome, descricao, preco, categoria, emoji } = req.body;
+    const { nome, descricao, preco, categoria, emoji, prato_do_dia } = req.body;
     if (!nome || !preco || !categoria)
       return res.status(400).json({ error: 'Campos obrigatórios: nome, preco, categoria' });
-    const result = db.addMenuItem(nome, descricao || '', parseFloat(preco), categoria, emoji || '🍽️');
+    const result = db.addMenuItem(nome, descricao || '', parseFloat(preco), categoria, emoji || '🍽️', prato_do_dia);
     res.status(201).json({ id: result.lastInsertRowid });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.put('/api/menu/:id', requireAdmin, (req, res) => {
   try {
-    const { nome, descricao, preco, categoria, emoji, disponivel } = req.body;
+    const { nome, descricao, preco, categoria, emoji, disponivel, prato_do_dia } = req.body;
     db.updateMenuItem(req.params.id, nome, descricao || '', parseFloat(preco), categoria,
-      emoji || '🍽️', disponivel !== false && disponivel !== 0);
+      emoji || '🍽️', disponivel !== false && disponivel !== 0, prato_do_dia);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

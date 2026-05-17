@@ -191,6 +191,7 @@ async function carregarMenu() {
       <td>${i.categoria}</td>
       <td>R$ ${fmt(i.preco)}</td>
       <td><span class="disponivel-badge ${i.disponivel ? 'disp-sim' : 'disp-nao'}">${i.disponivel ? 'Sim' : 'Não'}</span></td>
+      <td>${i.prato_do_dia ? '<span class="disponivel-badge" style="background:rgba(234,179,8,.15);color:#d97706">⭐ Sim</span>' : '—'}</td>
       <td>
         <button class="btn-sm btn-preparar" onclick="editarItem(${i.id})" style="padding:5px 10px">✏️</button>
         <button class="btn-sm btn-danger" onclick="deletarItem(${i.id})" style="padding:5px 10px;margin-left:4px">🗑️</button>
@@ -223,6 +224,7 @@ function editarItem(id) {
   document.getElementById('item-preco').value = item.preco;
   document.getElementById('item-categoria').value = item.categoria;
   document.getElementById('item-disponivel').checked = !!item.disponivel;
+  document.getElementById('item-prato-dia').checked = !!item.prato_do_dia;
   document.getElementById('modal-item').classList.add('open');
 }
 
@@ -235,6 +237,7 @@ async function salvarItem() {
     categoria: document.getElementById('item-categoria').value,
     emoji: document.getElementById('item-emoji').value || '🍽️',
     disponivel: document.getElementById('item-disponivel').checked,
+    prato_do_dia: document.getElementById('item-prato-dia').checked,
   };
   const url = id ? `/api/menu/${id}` : '/api/menu';
   const method = id ? 'PUT' : 'POST';

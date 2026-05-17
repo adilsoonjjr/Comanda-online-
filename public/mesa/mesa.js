@@ -7,8 +7,6 @@ let formaPagamento = '';
 let pedidoAtual = null;
 let socket = null;
 
-// ── Init ───────────────────────────────────────────────────────────────────
-
 document.getElementById('mesa-num-header').textContent = mesaNumero;
 document.title = `Mesa ${mesaNumero} — Cardápio`;
 
@@ -26,8 +24,7 @@ function conectarSocket() {
   socket.on('status_atualizado', (order) => {
     if (pedidoAtual && order.id === pedidoAtual.id) {
       pedidoAtual = order;
-      atualizarTrackerStatus(order.status);
-      mostrarStatusBar(order.status);
+      atualizarStatusBanner(order.status);
     }
   });
 }
@@ -37,14 +34,32 @@ function conectarSocket() {
 async function carregarMenu() {
   const res = await fetch('/api/menu');
   menuItems = await res.json();
+  renderPratoDoDia();
   renderCategorias();
   renderMenu(menuItems);
 }
 
+function renderPratoDoDia() {
+  const pratos = menuItems.filter(i => i.prato_do_dia && i.disponivel);
+  const section = document.getElementById('prato-dia-section');
+  if (!pratos.length) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  section.innerHTML = pratos.map(i => `
+    <div class="prato-dia-card">
+      <div style="flex:1">
+        <div class="prato-dia-badge">⭐ Prato do Dia</div>
+        <div class="prato-dia-nome">${i.nome}</div>
+        ${i.descricao ? `<div class="prato-dia-desc">${i.descricao}</div>` : ''}
+        <div class="prato-dia-price">R$ ${fmt(i.preco)}</div>
+      </div>
+      <button class="prato-dia-add" onclick="adicionarItem(${i.id})">+</button>
+    </div>
+  `).join('<div style="height:10px"></div>');
+}
+
 function renderCategorias() {
   const cats = ['Todos', ...new Set(menuItems.map(i => i.categoria))];
-  const wrap = document.getElementById('cats-wrap');
-  wrap.innerHTML = cats.map((c, idx) =>
+  document.getElementById('cats-wrap').innerHTML = cats.map((c, idx) =>
     `<button class="cat-btn ${idx === 0 ? 'active' : ''}" onclick="filtrarCategoria('${c}', this)">${c}</button>`
   ).join('');
 }
@@ -52,14 +67,12 @@ function renderCategorias() {
 function filtrarCategoria(cat, btn) {
   document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  const filtered = cat === 'Todos' ? menuItems : menuItems.filter(i => i.categoria === cat);
-  renderMenu(filtered);
+  renderMenu(cat === 'Todos' ? menuItems : menuItems.filter(i => i.categoria === cat));
 }
 
 function renderMenu(items) {
   document.getElementById('menu-grid').innerHTML = items.map(i => `
     <div class="item-card">
-      <div class="item-emoji-wrap">${i.emoji}</div>
       <div class="item-body">
         <div class="item-name">${i.nome}</div>
         ${i.descricao ? `<div class="item-desc">${i.descricao}</div>` : ''}
@@ -129,7 +142,6 @@ function renderCarrinho() {
 
   container.innerHTML = items.map(({ item, qty }) => `
     <div class="cart-item">
-      <div class="cart-item-emoji">${item.emoji}</div>
       <div class="cart-item-info">
         <div class="cart-item-name">${item.nome}</div>
         <div class="cart-item-price">R$ ${fmt(item.preco * qty)}</div>
@@ -216,74 +228,47 @@ async function confirmarPedido() {
     if (!res.ok) { const d = await res.json(); alert(d.error); return; }
     const order = await res.json();
     pedidoAtual = order;
-    fecharCheckout();
-    mostrarConfirmacao(order, items);
+
+    // Fecha checkout, limpa carrinho, volta ao cardápio
+    document.getElementById('checkout-overlay').classList.remove('open');
+    cart = {};
+    atualizarBadgeCarrinho();
+
+    // Configura link do WhatsApp
+    const linhas = items.map(({ item, qty }) => `  ${qty}x ${item.nome} — R$ ${fmt(item.preco * qty)}`).join('\n');
+    const pag = order.troco_para > 0
+      ? `${order.forma_pagamento} (troco p/ R$ ${fmt(order.troco_para)})`
+      : order.forma_pagamento;
+    const msg = `*Comanda Digital — Mesa ${mesaNumero}*\n\n${linhas}\n\n*Total: R$ ${fmt(order.total)}*\nPagamento: ${pag}\n\n_Gerado automaticamente_`;
+    document.getElementById('btn-whatsapp').href = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+
+    // Mostra status banner e toast
+    atualizarStatusBanner('pendente');
+    mostrarToastPedido();
   } catch { alert('Erro ao enviar pedido. Tente novamente.'); }
 }
 
-// ── Confirmação ────────────────────────────────────────────────────────────
+// ── Status Banner ──────────────────────────────────────────────────────────
 
-function mostrarConfirmacao(order, items) {
-  document.getElementById('menu-screen').style.display = 'none';
-  const conf = document.getElementById('confirmacao');
-  conf.classList.add('visible');
-  cart = {};
-  atualizarBadgeCarrinho();
-  atualizarTrackerStatus('pendente');
-
-  const linhas = items.map(({ item, qty }) => `  ${qty}x ${item.nome} — R$ ${fmt(item.preco * qty)}`).join('\n');
-  const pag = order.troco_para > 0
-    ? `${order.forma_pagamento} (troco p/ R$ ${fmt(order.troco_para)})`
-    : order.forma_pagamento;
-  const msg = `*Comanda Digital — Mesa ${mesaNumero}*\n\n${linhas}\n\n*Total: R$ ${fmt(order.total)}*\nPagamento: ${pag}\n\n_Gerado automaticamente_`;
-  document.getElementById('btn-whatsapp').href = `https://wa.me/?text=${encodeURIComponent(msg)}`;
-}
-
-function atualizarTrackerStatus(status) {
-  const steps = ['pendente', 'preparando', 'pronto'];
-  const idx = steps.indexOf(status);
-
-  steps.forEach((s, i) => {
-    const dot = document.getElementById(`t-${s}`);
-    if (!dot) return;
-    if (i < idx) { dot.classList.add('done'); dot.classList.remove('active'); }
-    else if (i === idx) { dot.classList.add('active'); dot.classList.remove('done'); }
-    else { dot.classList.remove('done', 'active'); }
-  });
-
-  const line1 = document.getElementById('line-1');
-  const line2 = document.getElementById('line-2');
-  if (line1) line1.classList.toggle('done', idx >= 1);
-  if (line2) line2.classList.toggle('done', idx >= 2);
-
-  if (status === 'pronto') {
-    const sub = document.querySelector('.confirm-sub');
-    if (sub) sub.textContent = '🎉 Seu pedido está pronto!';
-    const dotPronto = document.getElementById('t-pronto');
-    if (dotPronto) dotPronto.classList.add('done');
-  }
-}
-
-function mostrarStatusBar(status) {
-  const bar = document.getElementById('status-bar');
+function atualizarStatusBanner(status) {
+  const banner = document.getElementById('status-banner');
   const dot = document.getElementById('status-dot');
   const text = document.getElementById('status-text');
   const sub = document.getElementById('status-sub');
-  if (!bar) return;
-  bar.classList.add('visible');
+  banner.classList.add('visible');
   dot.className = `status-dot ${status}`;
   const labels = {
-    pendente: ['Pedido recebido', 'Aguardando preparo'],
-    preparando: ['Preparando seu pedido', 'Aguarde, estamos preparando!'],
-    pronto: ['Pedido pronto!', 'Seu pedido está a caminho'],
+    pendente:   ['⏳ Pedido recebido', 'Aguardando preparo...'],
+    preparando: ['👨‍🍳 Preparando seu pedido', 'Já estamos no fogão!'],
+    pronto:     ['✅ Pedido pronto!', 'Pode buscar ou aguardar na mesa'],
   };
   [text.textContent, sub.textContent] = labels[status] || [status, ''];
 }
 
-function novosPedidos() {
-  pedidoAtual = null;
-  document.getElementById('confirmacao').classList.remove('visible');
-  document.getElementById('menu-screen').style.display = 'block';
+function mostrarToastPedido() {
+  const toast = document.getElementById('toast-pedido');
+  toast.classList.add('visible');
+  setTimeout(() => toast.classList.remove('visible'), 3000);
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
