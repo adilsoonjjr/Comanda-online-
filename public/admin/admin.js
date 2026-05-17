@@ -144,7 +144,7 @@ function renderPedidos(pedidos) {
       : '';
 
     const actions = buildActions(p);
-    const hora = new Date(p.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const hora = new Date(p.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bahia' });
 
     return `
     <div class="order-card" id="order-${p.id}">
