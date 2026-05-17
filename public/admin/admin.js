@@ -282,6 +282,11 @@ async function carregarMesas() {
     <div class="mesa-card">
       <div class="mesa-num">${m.numero}</div>
       <div class="mesa-status">${m.status === 'active' ? '✅ Ativa' : '❌ Inativa'}</div>
+      <button class="btn-sm ${m.status === 'active' ? 'btn-danger' : 'btn-pronto'}"
+        onclick="toggleMesa(${m.numero}, '${m.status === 'active' ? 'inactive' : 'active'}')"
+        style="margin-top:12px;width:100%">
+        ${m.status === 'active' ? '🔴 Desativar' : '🟢 Ativar'}
+      </button>
     </div>
   `).join('');
 }
@@ -289,6 +294,15 @@ async function carregarMesas() {
 function abrirModalMesa() {
   document.getElementById('mesa-numero').value = '';
   document.getElementById('modal-mesa').classList.add('open');
+}
+
+async function toggleMesa(numero, novoStatus) {
+  await fetch(`/api/mesas/${numero}/status`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+    body: JSON.stringify({ status: novoStatus }),
+  });
+  carregarMesas();
 }
 
 async function salvarMesa() {
