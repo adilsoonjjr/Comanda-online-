@@ -79,6 +79,48 @@ async function initDatabase() {
     console.log('✅ Mesas criadas (1-5)');
   }
 
+  const mc = await get('SELECT COUNT(*) as c FROM menu_items');
+  if (!mc || mc.c === 0) {
+    const seed = [
+      ['Porção',                         'Feijão, arroz, macarrão',           30, 'Prato'],
+      ['Buchada',                         'Farofa, arroz, macarrão',           30, 'Prato'],
+      ['Peixe Frito',                     'Feijão, arroz, salada',             30, 'Prato'],
+      ['Feijoada',                        'Farofa, arroz, salada',             30, 'Prato'],
+      ['Carne de Sol',                    'Farofa, salada',                    35, 'Prato'],
+      ['Carneiro',                        'Farofa, salada',                    40, 'Prato'],
+      ['Tripa',                           'Farofa, salada',                    30, 'Prato'],
+      ['Pirão de Alpim c/ Carne do Sol',  'Acompanhamento incluso',            60, 'Prato'],
+      ['Pirão de Alpim c/ Frango',        'Feijão, arroz, macarrão',           25, 'Prato'],
+      ['Parmegiana de Frango',            'Feijão, arroz, macarrão',           25, 'Prato'],
+      ['Batata Frita',                    '',                                  20, 'Petisco'],
+      ['Doce de Leite',                   '',                                   8, 'Sobremesa'],
+      ['Mousse',                          '',                                   8, 'Sobremesa'],
+      ['Pudim',                           '',                                   8, 'Sobremesa'],
+      ['Heineken 330ml',                  '',                                  10, 'Bebidas'],
+      ['Budweiser 330ml',                 '',                                  10, 'Bebidas'],
+      ['Skol 300ml',                      '',                                   4, 'Bebidas'],
+      ['Brahma 300ml',                    '',                                   4, 'Bebidas'],
+      ['Amstel 300ml',                    '',                                   4, 'Bebidas'],
+      ['Refrigerante 1L',                 '',                                   8, 'Bebidas'],
+      ['Refrigerante Lata',               '',                                   5, 'Bebidas'],
+      ['Água c/ Gás 500ml',               '',                                   4, 'Bebidas'],
+      ['Água s/ Gás 500ml',               '',                                   3, 'Bebidas'],
+      ['Whisky Red Label',                'Dose',                               9, 'Drinks'],
+      ['Whisky Passport',                 'Dose',                               9, 'Drinks'],
+      ['Campari',                         'Dose',                               9, 'Drinks'],
+      ['Vodka',                           'Dose',                               9, 'Drinks'],
+      ['Suco de Goiaba',                  '',                                  12, 'Sucos'],
+      ['Suco de Acerola',                 '',                                  12, 'Sucos'],
+      ['Suco de Maracujá',                '',                                  12, 'Sucos'],
+      ['Suco de Manga',                   '',                                  12, 'Sucos'],
+    ];
+    for (const [nome, descricao, preco, categoria] of seed) {
+      await run('INSERT INTO menu_items (nome, descricao, preco, categoria, emoji, disponivel, prato_do_dia) VALUES (?,?,?,?,?,1,0)',
+        [nome, descricao, preco, categoria, '🍽️']);
+    }
+    console.log(`✅ Cardápio seed: ${seed.length} itens cadastrados`);
+  }
+
   console.log('✅ Banco de dados pronto');
 }
 
