@@ -157,6 +157,16 @@
     .total-geral-val { font-size: 24px; font-weight: 900; color: var(--red); }
     .btn-fechar-confirmar { width: 100%; padding: 16px; background: var(--red); border: none; border-radius: var(--radius); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; margin-bottom: 10px; }
 
+    /* ── Mesa Inativa ── */
+    #mesa-inativa {
+      display: none; position: fixed; inset: 0; background: var(--bg);
+      z-index: 9999; flex-direction: column; align-items: center;
+      justify-content: center; padding: 40px 24px; text-align: center;
+    }
+    .inativa-icon { font-size: 72px; margin-bottom: 20px; }
+    .inativa-title { font-size: 26px; font-weight: 800; color: var(--red); margin-bottom: 12px; }
+    .inativa-sub { font-size: 15px; color: var(--text2); line-height: 1.6; }
+
     /* ── Tela Aguardando ── */
     #tela-aguardando { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 400; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; text-align: center; }
     #tela-aguardando.visible { display: flex; }
@@ -286,6 +296,13 @@
   <div class="aguardando-pag" id="aguardando-pag"></div>
   <div class="aguardando-sub">Aguarde o caixa confirmar<br>o pagamento. Obrigado!</div>
   <a href="#" id="btn-whatsapp" class="btn-whatsapp-small" target="_blank">📱 Recibo via WhatsApp</a>
+</div>
+
+<!-- Mesa Inativa -->
+<div id="mesa-inativa">
+  <div class="inativa-icon">🚫</div>
+  <div class="inativa-title">Mesa Indisponível</div>
+  <div class="inativa-sub">Esta mesa está desativada no momento.<br>Por favor, solicite ajuda ao atendente.</div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>

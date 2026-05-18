@@ -11,9 +11,26 @@ document.getElementById('mesa-num-header').textContent = mesaNumero;
 document.title = `Mesa ${mesaNumero} — Cardápio`;
 
 (async function init() {
+  const ativa = await verificarMesaAtiva();
+  if (!ativa) return;
   await carregarMenu();
   conectarSocket();
 })();
+
+async function verificarMesaAtiva() {
+  try {
+    const res = await fetch(`/api/mesa/${mesaNumero}/info`);
+    if (!res.ok) return true;
+    const data = await res.json();
+    if (data.status !== 'active') {
+      document.getElementById('mesa-inativa').style.display = 'flex';
+      document.querySelector('.header').style.display = 'none';
+      document.querySelector('.fechar-conta-bar').style.display = 'none';
+      return false;
+    }
+    return true;
+  } catch { return true; }
+}
 
 // ── Socket ─────────────────────────────────────────────────────────────────
 

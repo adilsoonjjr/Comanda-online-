@@ -78,6 +78,17 @@ app.delete('/api/menu/:id', requireAdmin, async (req, res) => {
   catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── Mesa info (público) ───────────────────────────────────────────────────────
+
+app.get('/api/mesa/:numero/info', async (req, res) => {
+  try {
+    const tables = await db.getAllTables();
+    const mesa = tables.find(m => m.numero === parseInt(req.params.numero));
+    if (!mesa) return res.status(404).json({ error: 'Mesa não encontrada' });
+    res.json({ numero: mesa.numero, status: mesa.status });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ── Mesas ─────────────────────────────────────────────────────────────────────
 
 app.get('/api/mesas', requireAdmin, async (req, res) => {
@@ -118,6 +129,9 @@ app.post('/api/pedidos', async (req, res) => {
   try {
     const { mesa_numero, forma_pagamento, troco_para, total, items } = req.body;
     if (!mesa_numero || !items || items.length === 0) return res.status(400).json({ error: 'Dados inválidos' });
+    const tables = await db.getAllTables();
+    const mesa = tables.find(m => m.numero === parseInt(mesa_numero));
+    if (mesa && mesa.status !== 'active') return res.status(403).json({ error: 'Mesa inativa' });
     const orderId = await db.createOrder(parseInt(mesa_numero), forma_pagamento || '', parseFloat(troco_para) || 0, parseFloat(total), items);
     const order = await db.getOrderById(orderId);
     io.to('admin').emit('novo_pedido', order);
