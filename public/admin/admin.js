@@ -83,6 +83,7 @@ function switchTab(tab) {
   if (tab === 'cardapio') carregarMenu();
   if (tab === 'mesas') carregarMesas();
   if (tab === 'qrcodes') carregarQRCodes();
+  if (tab === 'relatorio') carregarRelatorio();
 }
 
 function toggleTab(tab) { switchTab(tab); }
@@ -176,11 +177,43 @@ function buildActions(p) {
   return btns.join('');
 }
 
+let _mesaParaFechar = null;
+let _pagAdmin = '';
+
 async function fecharMesa(numero) {
-  if (!confirm(`Fechar Mesa ${numero} e confirmar pagamento?`)) return;
-  await fetch(`/api/mesas/${numero}/resetar`, {
-    method: 'POST', headers: { 'x-admin-token': token },
+  _mesaParaFechar = numero;
+  _pagAdmin = '';
+  document.getElementById('fechar-admin-mesa-num').textContent = numero;
+  document.getElementById('fechar-admin-total-val').textContent = 'Calculando...';
+  document.getElementById('troco-admin-group').style.display = 'none';
+  document.getElementById('troco-admin-input').value = '';
+  document.querySelectorAll('#fechar-admin-pay-btns button').forEach(b => b.style.borderColor = 'var(--border)');
+  document.getElementById('modal-fechar-mesa-admin').classList.add('open');
+  try {
+    const pedidos = await fetch(`/api/pedidos/mesa/${numero}`).then(r => r.json());
+    const total = pedidos.reduce((s, p) => s + p.total, 0);
+    document.getElementById('fechar-admin-total-val').textContent = `R$ ${fmt(total)}`;
+  } catch { document.getElementById('fechar-admin-total-val').textContent = '—'; }
+}
+
+function selecionarPagAdmin(forma) {
+  _pagAdmin = forma;
+  document.querySelectorAll('#fechar-admin-pay-btns button').forEach(b => {
+    b.style.borderColor = b.dataset.pag === forma ? 'var(--accent)' : 'var(--border)';
+    b.style.background  = b.dataset.pag === forma ? 'rgba(249,115,22,.15)' : 'var(--surface2)';
   });
+  document.getElementById('troco-admin-group').style.display = forma === 'Dinheiro' ? 'block' : 'none';
+}
+
+async function confirmarFecharMesaAdmin() {
+  if (!_pagAdmin) { alert('Selecione a forma de pagamento'); return; }
+  const troco = parseFloat(document.getElementById('troco-admin-input').value) || 0;
+  await fetch(`/api/mesas/${_mesaParaFechar}/resetar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+    body: JSON.stringify({ forma_pagamento: _pagAdmin, troco_para: troco }),
+  });
+  fecharModal('modal-fechar-mesa-admin');
   carregarPedidos();
 }
 
@@ -296,9 +329,10 @@ async function carregarMesas() {
     <div class="mesa-card">
       <div class="mesa-num">${m.numero}</div>
       <div class="mesa-status">${m.status === 'active' ? '✅ Ativa' : '❌ Inativa'}</div>
+      ${m.status === 'active' ? `<button class="btn-sm btn-preparar" onclick="abrirAdicionarPedido(${m.numero})" style="margin-top:12px;width:100%">➕ Adicionar Pedido</button>` : ''}
       <button class="btn-sm ${m.status === 'active' ? 'btn-danger' : 'btn-pronto'}"
         onclick="toggleMesa(${m.numero}, '${m.status === 'active' ? 'inactive' : 'active'}')"
-        style="margin-top:12px;width:100%">
+        style="margin-top:8px;width:100%">
         ${m.status === 'active' ? '🔴 Desativar' : '🟢 Ativar'}
       </button>
     </div>
@@ -417,6 +451,115 @@ function tocarSom() {
     beep(880, 0.15, 0.12);
     beep(1320, 0.3, 0.22);
   } catch { /* audio not available */ }
+}
+
+// ── Adicionar Pedido (Admin) ───────────────────────────────────────────────
+
+let _addPedidoMesa = null;
+let _addCart = {};
+
+function abrirAdicionarPedido(mesa) {
+  _addPedidoMesa = mesa;
+  _addCart = {};
+  document.getElementById('add-pedido-mesa-num').textContent = mesa;
+  renderAddPedidoItems();
+  document.getElementById('modal-add-pedido').classList.add('open');
+}
+
+function renderAddPedidoItems() {
+  const items = window._menuItems || [];
+  const cats = [...new Set(items.map(i => i.categoria))];
+  let html = '';
+  cats.forEach(cat => {
+    const catItems = items.filter(i => i.categoria === cat && i.disponivel);
+    if (!catItems.length) return;
+    html += `<div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px">${cat}</div>`;
+    catItems.forEach(i => {
+      const qty = (_addCart[i.id] || 0);
+      html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+        <div style="flex:1"><div style="font-size:14px;font-weight:600">${i.nome}</div><div style="font-size:13px;color:var(--accent)">R$ ${fmt(i.preco)}</div></div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button onclick="addCartAdmin(${i.id},-1)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:16px;font-weight:700">−</button>
+          <span style="min-width:20px;text-align:center;font-weight:700">${qty}</span>
+          <button onclick="addCartAdmin(${i.id},1)" style="width:28px;height:28px;border-radius:50%;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:16px;font-weight:700">+</button>
+        </div>
+      </div>`;
+    });
+  });
+  document.getElementById('add-pedido-items').innerHTML = html || '<p style="color:var(--text2);text-align:center;padding:20px">Nenhum item disponível</p>';
+  const total = Object.entries(_addCart).reduce((s, [id, qty]) => {
+    const item = (window._menuItems || []).find(i => i.id === parseInt(id));
+    return s + (item ? item.preco * qty : 0);
+  }, 0);
+  document.getElementById('add-pedido-total-val').textContent = `R$ ${fmt(total)}`;
+}
+
+function addCartAdmin(id, delta) {
+  _addCart[id] = (_addCart[id] || 0) + delta;
+  if (_addCart[id] <= 0) delete _addCart[id];
+  renderAddPedidoItems();
+}
+
+async function confirmarPedidoAdmin() {
+  const entries = Object.entries(_addCart);
+  if (!entries.length) { alert('Selecione ao menos um item'); return; }
+  const items = entries.map(([id, qty]) => {
+    const item = (window._menuItems || []).find(i => i.id === parseInt(id));
+    return { item_id: parseInt(id), quantidade: qty, preco_unitario: item.preco, nome_item: item.nome };
+  });
+  const total = items.reduce((s, i) => s + i.preco_unitario * i.quantidade, 0);
+  const res = await fetch('/api/pedidos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+    body: JSON.stringify({ mesa_numero: _addPedidoMesa, forma_pagamento: '', troco_para: 0, total, items }),
+  });
+  if (!res.ok) { const d = await res.json(); alert(d.error); return; }
+  fecharModal('modal-add-pedido');
+  carregarPedidos();
+}
+
+// ── Relatório ──────────────────────────────────────────────────────────────
+
+async function carregarRelatorio() {
+  try {
+    const res = await fetch('/api/relatorio/dia', { headers: { 'x-admin-token': token } });
+    const data = await res.json();
+    renderRelatorio(data);
+  } catch { document.getElementById('relatorio-lista').innerHTML = '<p style="color:var(--text2)">Erro ao carregar relatório.</p>'; }
+}
+
+function renderRelatorio(data) {
+  const { orders, total, mesas, totalPedidos, date } = data;
+  document.getElementById('relatorio-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Faturado hoje</div><div class="stat-value stat-orange">R$ ${fmt(total)}</div></div>
+    <div class="stat-card"><div class="stat-label">Mesas atendidas</div><div class="stat-value stat-green">${mesas}</div></div>
+    <div class="stat-card"><div class="stat-label">Pedidos</div><div class="stat-value stat-blue">${totalPedidos}</div></div>
+  `;
+  if (!orders.length) {
+    document.getElementById('relatorio-lista').innerHTML = `<div class="empty-state"><div class="icon">📊</div><p>Nenhum pedido hoje (${date})</p></div>`;
+    return;
+  }
+  document.getElementById('relatorio-lista').innerHTML = `
+    <div style="overflow-x:auto">
+    <table class="menu-table">
+      <thead><tr><th>Hora</th><th>Mesa</th><th>Itens</th><th>Total</th><th>Status</th><th>Pagamento</th></tr></thead>
+      <tbody>
+        ${orders.map(o => {
+          const hora = new Date(o.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bahia' });
+          const itens = o.items.map(i => `${i.quantidade}x ${i.nome_item}`).join(', ');
+          const pag = o.forma_pagamento ? `${o.forma_pagamento}${o.troco_para > 0 ? ` (troco p/ R$ ${fmt(o.troco_para)})` : ''}` : '—';
+          return `<tr>
+            <td>${hora}</td>
+            <td><span class="mesa-badge" style="font-size:12px">Mesa ${o.mesa_numero}</span></td>
+            <td style="font-size:12px;color:var(--text2);max-width:200px">${itens}</td>
+            <td style="font-weight:700;color:var(--accent)">R$ ${fmt(o.total)}</td>
+            <td><span class="status-badge status-${o.status}">${statusLabel(o.status)}</span></td>
+            <td style="font-size:12px;color:var(--text2)">${pag}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table></div>
+  `;
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────

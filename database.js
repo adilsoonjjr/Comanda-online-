@@ -172,10 +172,18 @@ async function closeAllOrdersByMesa(mesa_numero, forma_pagamento, troco_para) {
   );
 }
 
+async function getDailyReport(dateStart, dateEnd) {
+  const orders = await all(
+    'SELECT * FROM orders WHERE created_at >= ? AND created_at < ? ORDER BY created_at DESC',
+    [dateStart, dateEnd]
+  );
+  return attachItems(orders);
+}
+
 module.exports = {
   initDatabase,
   getAllTables, addTable, updateTableStatus,
   getAllMenuItems, getAvailableMenuItems, addMenuItem, updateMenuItem, deleteMenuItem,
   getAllActiveOrders, getOrdersByMesa, getOrderById, createOrder, updateOrderStatus,
-  getTotalAtivoByMesa, closeAllOrdersByMesa,
+  getTotalAtivoByMesa, closeAllOrdersByMesa, getDailyReport,
 };

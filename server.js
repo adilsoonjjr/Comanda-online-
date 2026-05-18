@@ -168,10 +168,31 @@ app.post('/api/conta/:mesa_numero', async (req, res) => {
 app.post('/api/mesas/:numero/resetar', requireAdmin, async (req, res) => {
   try {
     const numero = parseInt(req.params.numero);
-    await db.closeAllOrdersByMesa(numero, '', 0);
+    const { forma_pagamento, troco_para } = req.body;
+    await db.closeAllOrdersByMesa(numero, forma_pagamento || '', troco_para || 0);
     io.to(`mesa_${numero}`).emit('mesa_resetada');
     io.to('admin').emit('mesa_resetada', { mesa_numero: numero });
     res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Relatório ─────────────────────────────────────────────────────────────────
+
+function getTodayBRT() {
+  const brtNow = new Date(Date.now() - 3 * 60 * 60 * 1000);
+  return brtNow.toISOString().split('T')[0];
+}
+
+app.get('/api/relatorio/dia', requireAdmin, async (req, res) => {
+  try {
+    const date = req.query.data || getTodayBRT();
+    const start = new Date(`${date}T03:00:00.000Z`);
+    const end   = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+    const orders = await db.getDailyReport(start.toISOString(), end.toISOString());
+    const finalizados = orders.filter(o => o.status === 'finalizado');
+    const total  = finalizados.reduce((s, o) => s + o.total, 0);
+    const mesas  = new Set(finalizados.map(o => o.mesa_numero)).size;
+    res.json({ orders, total, mesas, totalPedidos: orders.length, date });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

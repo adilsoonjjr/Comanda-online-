@@ -327,6 +327,9 @@
       <div class="nav-item" data-tab="qrcodes" onclick="switchTab('qrcodes')">
         <span class="icon">📱</span> QR Codes
       </div>
+      <div class="nav-item" data-tab="relatorio" onclick="switchTab('relatorio')">
+        <span class="icon">📊</span> Relatório
+      </div>
     </nav>
 
     <main class="main">
@@ -372,6 +375,16 @@
           <button class="btn-add" onclick="abrirModalMesa()">+ Nova Mesa</button>
         </div>
         <div class="qr-grid" id="qr-container"></div>
+      </div>
+
+      <!-- Relatório -->
+      <div id="tab-relatorio" class="tab-content">
+        <div class="section-header">
+          <h2 class="page-title" style="margin:0">Relatório do Dia</h2>
+          <button class="btn-add" onclick="carregarRelatorio()">↻ Atualizar</button>
+        </div>
+        <div class="stats-bar" id="relatorio-stats"></div>
+        <div id="relatorio-lista"></div>
       </div>
     </main>
   </div>
@@ -439,6 +452,48 @@
   </div>
 </div>
 
+<!-- Modal Fechar Mesa Admin -->
+<div class="modal-overlay" id="modal-fechar-mesa-admin">
+  <div class="modal">
+    <h2>🧾 Fechar Mesa <span id="fechar-admin-mesa-num"></span></h2>
+    <div style="background:rgba(239,68,68,.1);border:1px solid var(--red);border-radius:8px;padding:14px 16px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
+      <span style="color:var(--text2);font-size:14px">Total consumido</span>
+      <span style="font-size:22px;font-weight:800;color:var(--red)" id="fechar-admin-total-val">R$ 0,00</span>
+    </div>
+    <div class="form-group">
+      <label>Forma de Pagamento *</label>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px" id="fechar-admin-pay-btns">
+        <button onclick="selecionarPagAdmin('Dinheiro')" data-pag="Dinheiro" style="padding:12px 4px;border:2px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);cursor:pointer;font-size:13px;font-weight:600">💵 Dinheiro</button>
+        <button onclick="selecionarPagAdmin('PIX')" data-pag="PIX" style="padding:12px 4px;border:2px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);cursor:pointer;font-size:13px;font-weight:600">📲 PIX</button>
+        <button onclick="selecionarPagAdmin('Cartão')" data-pag="Cartão" style="padding:12px 4px;border:2px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);cursor:pointer;font-size:13px;font-weight:600">💳 Cartão</button>
+      </div>
+    </div>
+    <div class="form-group" id="troco-admin-group" style="display:none">
+      <label>Troco para quanto? (R$)</label>
+      <input type="number" id="troco-admin-input" placeholder="Ex: 50,00" step="0.01" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fecharModal('modal-fechar-mesa-admin')">Cancelar</button>
+      <button class="btn-save" style="background:var(--red)" onclick="confirmarFecharMesaAdmin()">Fechar Mesa</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Adicionar Pedido Admin -->
+<div class="modal-overlay" id="modal-add-pedido">
+  <div class="modal" style="max-width:520px">
+    <h2>Adicionar à Mesa <span id="add-pedido-mesa-num"></span></h2>
+    <div id="add-pedido-items" style="max-height:55vh;overflow-y:auto;margin-bottom:12px"></div>
+    <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:700;padding:12px 0;border-top:1px solid var(--border)">
+      <span>Total</span><span id="add-pedido-total-val" style="color:var(--accent)">R$ 0,00</span>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fecharModal('modal-add-pedido')">Cancelar</button>
+      <button class="btn-save" onclick="confirmarPedidoAdmin()">Enviar Pedido</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast-container"></div>
 
 <!-- Bottom Nav (mobile) -->
@@ -460,6 +515,10 @@
     <div class="bottom-nav-item" data-tab="qrcodes" onclick="switchTab('qrcodes')">
       <span class="bn-icon">📱</span>
       <span>QR Codes</span>
+    </div>
+    <div class="bottom-nav-item" data-tab="relatorio" onclick="switchTab('relatorio')">
+      <span class="bn-icon">📊</span>
+      <span>Relatório</span>
     </div>
   </div>
 </nav>
