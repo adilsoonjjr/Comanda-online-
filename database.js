@@ -140,8 +140,8 @@ async function getOrderById(id) {
 
 async function createOrder(mesa_numero, forma_pagamento, troco_para, total, items) {
   const result = await run(
-    'INSERT INTO orders (mesa_numero, forma_pagamento, troco_para, total) VALUES (?,?,?,?)',
-    [mesa_numero, forma_pagamento, troco_para || 0, total]
+    'INSERT INTO orders (mesa_numero, forma_pagamento, troco_para, total, created_at) VALUES (?,?,?,?,?)',
+    [mesa_numero, forma_pagamento, troco_para || 0, total, new Date().toISOString()]
   );
   const orderId = result.lastInsertRowid;
   for (const item of items) {
