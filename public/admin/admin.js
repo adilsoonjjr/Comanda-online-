@@ -520,6 +520,12 @@ async function confirmarPedidoAdmin() {
 
 // ── Relatório ──────────────────────────────────────────────────────────────
 
+async function zerarRelatorio() {
+  if (!confirm('Zerar o relatório de hoje? Todos os pedidos do dia serão apagados permanentemente.')) return;
+  await fetch('/api/relatorio/dia', { method: 'DELETE', headers: { 'x-admin-token': token } });
+  carregarRelatorio();
+}
+
 async function carregarRelatorio() {
   try {
     const res = await fetch('/api/relatorio/dia', { headers: { 'x-admin-token': token } });

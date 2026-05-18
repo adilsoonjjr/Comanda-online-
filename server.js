@@ -196,6 +196,16 @@ app.get('/api/relatorio/dia', requireAdmin, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+app.delete('/api/relatorio/dia', requireAdmin, async (req, res) => {
+  try {
+    const date = req.query.data || getTodayBRT();
+    const start = new Date(`${date}T03:00:00.000Z`);
+    const end   = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+    await db.clearDailyOrders(start.toISOString(), end.toISOString());
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ── QR Code ───────────────────────────────────────────────────────────────────
 
 app.get('/api/qrcode/:numero', async (req, res) => {

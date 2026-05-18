@@ -381,7 +381,10 @@
       <div id="tab-relatorio" class="tab-content">
         <div class="section-header">
           <h2 class="page-title" style="margin:0">Relatório do Dia</h2>
-          <button class="btn-add" onclick="carregarRelatorio()">↻ Atualizar</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn-add" onclick="carregarRelatorio()">↻ Atualizar</button>
+            <button class="btn-add" style="background:var(--red)" onclick="zerarRelatorio()">🗑️ Zerar</button>
+          </div>
         </div>
         <div class="stats-bar" id="relatorio-stats"></div>
         <div id="relatorio-lista"></div>

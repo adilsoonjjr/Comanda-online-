@@ -180,10 +180,21 @@ async function getDailyReport(dateStart, dateEnd) {
   return attachItems(orders);
 }
 
+async function clearDailyOrders(dateStart, dateEnd) {
+  const orders = await all(
+    'SELECT id FROM orders WHERE created_at >= ? AND created_at < ?',
+    [dateStart, dateEnd]
+  );
+  for (const o of orders) {
+    await run('DELETE FROM order_items WHERE order_id=?', [o.id]);
+  }
+  await run('DELETE FROM orders WHERE created_at >= ? AND created_at < ?', [dateStart, dateEnd]);
+}
+
 module.exports = {
   initDatabase,
   getAllTables, addTable, updateTableStatus,
   getAllMenuItems, getAvailableMenuItems, addMenuItem, updateMenuItem, deleteMenuItem,
   getAllActiveOrders, getOrdersByMesa, getOrderById, createOrder, updateOrderStatus,
-  getTotalAtivoByMesa, closeAllOrdersByMesa, getDailyReport,
+  getTotalAtivoByMesa, closeAllOrdersByMesa, getDailyReport, clearDailyOrders,
 };
