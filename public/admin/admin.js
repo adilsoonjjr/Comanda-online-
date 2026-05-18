@@ -520,10 +520,36 @@ async function confirmarPedidoAdmin() {
 
 // ── Relatório ──────────────────────────────────────────────────────────────
 
-async function zerarRelatorio() {
-  if (!confirm('Zerar o relatório de hoje? Todos os pedidos do dia serão apagados permanentemente.')) return;
-  await fetch('/api/relatorio/dia', { method: 'DELETE', headers: { 'x-admin-token': token } });
-  carregarRelatorio();
+let _acaoComSenha = null;
+
+function pedirSenhaAdmin(acao) {
+  _acaoComSenha = acao;
+  document.getElementById('confirm-senha-input').value = '';
+  document.getElementById('confirm-senha-error').textContent = '';
+  document.getElementById('modal-confirm-senha').classList.add('open');
+  setTimeout(() => document.getElementById('confirm-senha-input').focus(), 100);
+}
+
+async function confirmarComSenha() {
+  const senha = document.getElementById('confirm-senha-input').value;
+  const errEl = document.getElementById('confirm-senha-error');
+  errEl.textContent = '';
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ senha }),
+    });
+    if (!res.ok) { errEl.textContent = 'Senha incorreta'; return; }
+    fecharModal('modal-confirm-senha');
+    if (_acaoComSenha) _acaoComSenha();
+  } catch { errEl.textContent = 'Erro de conexão'; }
+}
+
+function zerarRelatorio() {
+  pedirSenhaAdmin(async () => {
+    await fetch('/api/relatorio/dia', { method: 'DELETE', headers: { 'x-admin-token': token } });
+    carregarRelatorio();
+  });
 }
 
 async function carregarRelatorio() {
@@ -572,6 +598,9 @@ function renderRelatorio(data) {
 
 document.getElementById('senha-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') fazerLogin();
+});
+document.getElementById('confirm-senha-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') confirmarComSenha();
 });
 
 document.querySelectorAll('.modal-overlay').forEach(m => {

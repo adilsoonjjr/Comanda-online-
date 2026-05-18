@@ -17,9 +17,11 @@
 
     /* ── Header ── */
     .header {
-      background: var(--accent); color: #fff; padding: 16px 20px;
+      background: linear-gradient(135deg, #ea580c, var(--accent), #f97316);
+      color: #fff; padding: 16px 20px;
       display: flex; align-items: center; justify-content: space-between;
       position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 4px 20px rgba(249,115,22,.4);
     }
     .header-title { font-size: 20px; font-weight: 800; }
     .header-sub { font-size: 12px; opacity: .8; margin-top: 2px; }
@@ -59,8 +61,9 @@
     /* ── Prato do Dia ── */
     .prato-dia-section { padding: 14px 16px 0; }
     .prato-dia-card {
-      background: linear-gradient(135deg,#fff8ec,#fff3db); border: 2px solid #f59e0b;
+      background: linear-gradient(135deg,#fffbeb,#fff3db); border: 2px solid #f59e0b;
       border-radius: var(--radius); padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      box-shadow: 0 4px 20px rgba(245,158,11,.2);
     }
     .prato-dia-badge { display: inline-block; background: #f59e0b; color: #fff; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
     .prato-dia-nome { font-size: 16px; font-weight: 800; margin-bottom: 3px; }
@@ -71,12 +74,13 @@
     /* ── Categories ── */
     .cats-wrap { overflow-x: auto; padding: 14px 16px 8px; display: flex; gap: 8px; scrollbar-width: none; }
     .cats-wrap::-webkit-scrollbar { display: none; }
-    .cat-btn { flex-shrink: 0; padding: 7px 16px; border-radius: 20px; border: 1.5px solid var(--border); background: var(--surface); font-size: 13px; font-weight: 600; color: var(--text2); cursor: pointer; transition: all .2s; white-space: nowrap; }
-    .cat-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .cat-btn { flex-shrink: 0; padding: 7px 16px; border-radius: 20px; border: 1.5px solid var(--border); background: var(--surface); font-size: 13px; font-weight: 600; color: var(--text2); cursor: pointer; transition: all .2s; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,.06); }
+    .cat-btn.active { background: linear-gradient(135deg, var(--accent), #ea580c); border-color: transparent; color: #fff; box-shadow: 0 4px 14px rgba(249,115,22,.35); }
 
     /* ── Menu Grid ── */
     .menu-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(160px,1fr)); gap: 14px; padding: 8px 16px 160px; }
-    .item-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: all .2s; }
+    .item-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: all .2s; box-shadow: 0 2px 12px rgba(0,0,0,.07); }
+    .item-card:hover { border-color: var(--accent); box-shadow: 0 6px 24px rgba(249,115,22,.12); transform: translateY(-2px); }
     .item-card:active { transform: scale(.97); }
     .item-body { padding: 14px 12px; }
     .item-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; line-height: 1.3; }
@@ -103,7 +107,7 @@
     /* ── Cart Drawer ── */
     .drawer-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; }
     .drawer-overlay.open { display: block; }
-    .drawer { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-radius: 24px 24px 0 0; padding: 0 0 env(safe-area-inset-bottom,16px); max-height: 85vh; overflow-y: auto; transform: translateY(100%); transition: transform .35s cubic-bezier(.32,1,.65,1); z-index: 201; }
+    .drawer { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-radius: 24px 24px 0 0; padding: 0 0 env(safe-area-inset-bottom,16px); max-height: 85vh; overflow-y: auto; transform: translateY(100%); transition: transform .35s cubic-bezier(.32,1,.65,1); z-index: 201; box-shadow: 0 -8px 40px rgba(0,0,0,.15); }
     .drawer.open { transform: translateY(0); }
     .drawer-handle { width: 40px; height: 4px; background: #e5e7eb; border-radius: 2px; margin: 14px auto 0; }
     .drawer-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
