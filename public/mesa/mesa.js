@@ -115,6 +115,25 @@ function adicionarItem(id) {
   if (!cart[id]) cart[id] = { item, qty: 0 };
   cart[id].qty++;
   atualizarBadgeCarrinho();
+  mostrarToastAdicionado(item.nome);
+  animarCarrinho();
+}
+
+function mostrarToastAdicionado(nome) {
+  const el = document.getElementById('toast-adicionado');
+  el.innerHTML = `✅ <span>${nome}</span> adicionado!`;
+  el.classList.remove('visible');
+  void el.offsetWidth;
+  el.classList.add('visible');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('visible'), 2000);
+}
+
+function animarCarrinho() {
+  const btn = document.querySelector('.cart-btn');
+  btn.classList.remove('bounce');
+  void btn.offsetWidth;
+  btn.classList.add('bounce');
 }
 
 function alterarQtd(id, delta) {
