@@ -210,6 +210,13 @@ function updateOrderStatus(id, status) {
   return run('UPDATE orders SET status=? WHERE id=?', [status, id]);
 }
 
+function finalizeOrder(id, forma_pagamento, troco_para) {
+  return run(
+    "UPDATE orders SET status='finalizado', forma_pagamento=?, troco_para=? WHERE id=?",
+    [forma_pagamento, troco_para || 0, id]
+  );
+}
+
 async function getTotalAtivoByMesa(mesa_numero) {
   const row = await get(
     "SELECT COALESCE(SUM(total), 0) as total FROM orders WHERE mesa_numero=? AND status != 'finalizado'",
@@ -248,6 +255,6 @@ module.exports = {
   initDatabase,
   getAllTables, addTable, updateTableStatus,
   getAllMenuItems, getAvailableMenuItems, addMenuItem, updateMenuItem, deleteMenuItem,
-  getAllActiveOrders, getOrdersByMesa, getOrderById, createOrder, updateOrderStatus,
+  getAllActiveOrders, getOrdersByMesa, getOrderById, createOrder, updateOrderStatus, finalizeOrder,
   getTotalAtivoByMesa, closeAllOrdersByMesa, getDailyReport, clearDailyOrders, removeOrderItem,
 };

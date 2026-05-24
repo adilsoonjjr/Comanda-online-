@@ -150,6 +150,16 @@ app.put('/api/pedidos/:id/status', requireAdmin, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+app.post('/api/pedidos/:id/finalizar', requireAdmin, async (req, res) => {
+  try {
+    const { forma_pagamento, troco_para } = req.body;
+    if (!forma_pagamento) return res.status(400).json({ error: 'Forma de pagamento obrigatória' });
+    await db.finalizeOrder(req.params.id, forma_pagamento, troco_para || 0);
+    io.to('admin').emit('pedido_removido');
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.delete('/api/pedidos/:id/item/:itemId', requireAdmin, async (req, res) => {
   try {
     await db.removeOrderItem(req.params.id, req.params.itemId);

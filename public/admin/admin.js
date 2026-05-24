@@ -178,27 +178,24 @@ function buildActions(p) {
     btns.push(`<button class="btn-sm btn-pronto" onclick="mudarStatus(${p.id},'pronto')">Pronto</button>`);
   if (p.status === 'pronto')
     btns.push(`<button class="btn-sm btn-finalizar" onclick="mudarStatus(${p.id},'finalizado')">Finalizar</button>`);
-  btns.push(`<button class="btn-sm btn-danger" onclick="fecharMesa(${p.mesa_numero})" title="Fechar mesa e confirmar pagamento">🧾 Fechar Mesa</button>`);
+  btns.push(`<button class="btn-sm btn-danger" onclick="fecharPedido(${p.id},${p.total})" title="Fechar este pedido e confirmar pagamento">🧾 Fechar Pedido</button>`);
   return btns.join('');
 }
 
-let _mesaParaFechar = null;
+let _pedidoParaFechar = null;
 let _pagAdmin = '';
 
-async function fecharMesa(numero) {
-  _mesaParaFechar = numero;
+function fecharPedido(pedidoId, pedidoTotal) {
+  _pedidoParaFechar = pedidoId;
   _pagAdmin = '';
-  document.getElementById('fechar-admin-mesa-num').textContent = numero;
-  document.getElementById('fechar-admin-total-val').textContent = 'Calculando...';
+  document.getElementById('fechar-admin-total-val').textContent = `R$ ${fmt(pedidoTotal)}`;
   document.getElementById('troco-admin-group').style.display = 'none';
   document.getElementById('troco-admin-input').value = '';
-  document.querySelectorAll('#fechar-admin-pay-btns button').forEach(b => b.style.borderColor = 'var(--border)');
+  document.querySelectorAll('#fechar-admin-pay-btns button').forEach(b => {
+    b.style.borderColor = 'var(--border)';
+    b.style.background = 'var(--surface2)';
+  });
   document.getElementById('modal-fechar-mesa-admin').classList.add('open');
-  try {
-    const pedidos = await fetch(`/api/pedidos/mesa/${numero}`).then(r => r.json());
-    const total = pedidos.reduce((s, p) => s + p.total, 0);
-    document.getElementById('fechar-admin-total-val').textContent = `R$ ${fmt(total)}`;
-  } catch { document.getElementById('fechar-admin-total-val').textContent = '—'; }
 }
 
 function selecionarPagAdmin(forma) {
@@ -213,7 +210,7 @@ function selecionarPagAdmin(forma) {
 async function confirmarFecharMesaAdmin() {
   if (!_pagAdmin) { alert('Selecione a forma de pagamento'); return; }
   const troco = parseFloat(document.getElementById('troco-admin-input').value) || 0;
-  await fetch(`/api/mesas/${_mesaParaFechar}/resetar`, {
+  await fetch(`/api/pedidos/${_pedidoParaFechar}/finalizar`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
     body: JSON.stringify({ forma_pagamento: _pagAdmin, troco_para: troco }),
