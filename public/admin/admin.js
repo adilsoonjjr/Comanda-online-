@@ -145,7 +145,11 @@ function renderMesasSummary(pedidos) {
   });
 
   container.innerHTML = Object.entries(byMesa)
-    .sort(([a], [b]) => parseInt(a) - parseInt(b))
+    .sort(([, aOrders], [, bOrders]) => {
+      const aMin = Math.min(...aOrders.map(o => new Date(o.created_at)));
+      const bMin = Math.min(...bOrders.map(o => new Date(o.created_at)));
+      return aMin - bMin;
+    })
     .map(([mesa, orders]) => {
       const total = orders.reduce((s, o) => s + o.total, 0);
       const pendentes = orders.filter(o => o.status === 'pendente').length;
