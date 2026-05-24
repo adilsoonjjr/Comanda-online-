@@ -14,8 +14,24 @@ document.title = `Mesa ${mesaNumero} — Cardápio`;
   const ativa = await verificarMesaAtiva();
   if (!ativa) return;
   await carregarMenu();
+  await carregarPedidosExistentes();
   conectarSocket();
 })();
+
+async function carregarPedidosExistentes() {
+  try {
+    const res = await fetch(`/api/pedidos/mesa/${mesaNumero}`);
+    const pedidos = await res.json();
+    if (!Array.isArray(pedidos) || pedidos.length === 0) return;
+    totalEnviado = pedidos.reduce((s, p) => s + p.total, 0);
+    atualizarLabelFecharConta();
+    // mostra status do pedido mais recente
+    const ultimo = pedidos[0];
+    if (ultimo && ultimo.status !== 'finalizado') {
+      atualizarStatusBanner(ultimo.status);
+    }
+  } catch { /* sem pedidos anteriores */ }
+}
 
 async function verificarMesaAtiva() {
   try {
