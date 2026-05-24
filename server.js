@@ -154,8 +154,11 @@ app.delete('/api/pedidos/:id/item/:itemId', requireAdmin, async (req, res) => {
   try {
     await db.removeOrderItem(req.params.id, req.params.itemId);
     const order = await db.getOrderById(req.params.id);
-    io.to(`mesa_${order.mesa_numero}`).emit('status_atualizado', order);
-    io.to('admin').emit('status_atualizado', order);
+    if (order) {
+      io.to(`mesa_${order.mesa_numero}`).emit('status_atualizado', order);
+      io.to('admin').emit('status_atualizado', order);
+    }
+    io.to('admin').emit('pedido_removido');
     res.json({ ok: true, order });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

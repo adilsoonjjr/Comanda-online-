@@ -69,6 +69,7 @@ function conectarSocket() {
 
   socket.on('status_atualizado', () => { carregarPedidos(); });
   socket.on('mesa_resetada', () => { carregarPedidos(); });
+  socket.on('pedido_removido', () => { carregarPedidos(); });
 }
 
 // ── Tabs ───────────────────────────────────────────────────────────────────

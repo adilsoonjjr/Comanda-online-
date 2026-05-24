@@ -155,8 +155,13 @@ function deleteMenuItem(id) { return run('DELETE FROM menu_items WHERE id=?', [i
 
 async function removeOrderItem(orderId, itemId) {
   await run('DELETE FROM order_items WHERE id=? AND order_id=?', [itemId, orderId]);
-  const row = await get('SELECT COALESCE(SUM(preco_unitario * quantidade),0) as total FROM order_items WHERE order_id=?', [orderId]);
-  await run('UPDATE orders SET total=? WHERE id=?', [row.total, orderId]);
+  const count = await get('SELECT COUNT(*) as c FROM order_items WHERE order_id=?', [orderId]);
+  if (!count || count.c === 0) {
+    await run('DELETE FROM orders WHERE id=?', [orderId]);
+  } else {
+    const row = await get('SELECT COALESCE(SUM(preco_unitario * quantidade),0) as total FROM order_items WHERE order_id=?', [orderId]);
+    await run('UPDATE orders SET total=? WHERE id=?', [row.total, orderId]);
+  }
 }
 
 // ── Orders ─────────────────────────────────────────────────────────────────
