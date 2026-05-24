@@ -236,7 +236,7 @@ app.get('/api/relatorio/mes', requireAdmin, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-
+app.delete('/api/relatorio/dia', requireAdmin, async (req, res) => {
   try {
     const date = req.query.data || getTodayBRT();
     const start = new Date(`${date}T03:00:00.000Z`);
