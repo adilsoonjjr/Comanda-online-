@@ -3,6 +3,7 @@
 let token = localStorage.getItem('admin_token') || '';
 let socket = null;
 let newOrderCount = 0;
+const newOrderIds = new Set(); // IDs de pedidos que chegaram via socket (piscam)
 
 // ── Auth ───────────────────────────────────────────────────────────────────
 
@@ -53,6 +54,7 @@ function conectarSocket() {
 
   socket.on('novo_pedido', (order) => {
     newOrderCount++;
+    newOrderIds.add(order.id);
     atualizarBadges();
     tocarSom();
     mostrarToast('🛎️', `Novo pedido — Mesa ${order.mesa_numero}`,
@@ -67,7 +69,10 @@ function conectarSocket() {
     carregarPedidos();
   });
 
-  socket.on('status_atualizado', () => { carregarPedidos(); });
+  socket.on('status_atualizado', (order) => {
+    if (order && order.status !== 'pendente') newOrderIds.delete(order.id);
+    carregarPedidos();
+  });
   socket.on('mesa_resetada', () => { carregarPedidos(); });
   socket.on('pedido_removido', () => { carregarPedidos(); });
 }
@@ -106,26 +111,31 @@ let _mesaDetalhe = null;
 
 async function carregarPedidos() {
   try {
-    const res = await fetch('/api/pedidos', { headers: { 'x-admin-token': token } });
-    if (res.status === 401) { fazerLogout(); return; }
-    const pedidos = await res.json();
+    const [resPedidos, resRelatorio] = await Promise.all([
+      fetch('/api/pedidos', { headers: { 'x-admin-token': token } }),
+      fetch('/api/relatorio/dia', { headers: { 'x-admin-token': token } }),
+    ]);
+    if (resPedidos.status === 401) { fazerLogout(); return; }
+    const pedidos = await resPedidos.json();
+    const relatorio = resRelatorio.ok ? await resRelatorio.json() : { total: 0 };
     window._allPedidos = pedidos;
-    renderStats(pedidos);
+    renderStats(pedidos, relatorio.total || 0);
     renderMesasSummary(pedidos);
     if (_mesaDetalhe !== null) renderDetalhesMesa(_mesaDetalhe, pedidos);
   } catch { /* ignore */ }
 }
 
-function renderStats(pedidos) {
+function renderStats(pedidos, totalFinalizado) {
   const pendentes = pedidos.filter(p => p.status === 'pendente').length;
   const preparando = pedidos.filter(p => p.status === 'preparando').length;
   const prontos = pedidos.filter(p => p.status === 'pronto').length;
-  const total = pedidos.reduce((s, p) => s + p.total, 0);
+  const totalAtivo = pedidos.reduce((s, p) => s + p.total, 0);
+  const totalDia = totalFinalizado + totalAtivo;
   document.getElementById('stats-bar').innerHTML = `
     <div class="stat-card"><div class="stat-label">Pendentes</div><div class="stat-value stat-yellow">${pendentes}</div></div>
     <div class="stat-card"><div class="stat-label">Preparando</div><div class="stat-value stat-blue">${preparando}</div></div>
     <div class="stat-card"><div class="stat-label">Prontos</div><div class="stat-value stat-green">${prontos}</div></div>
-    <div class="stat-card"><div class="stat-label">Total do dia</div><div class="stat-value stat-orange">R$ ${fmt(total)}</div></div>
+    <div class="stat-card"><div class="stat-label">Total do dia</div><div class="stat-value stat-orange">R$ ${fmt(totalDia)}</div></div>
   `;
 }
 
@@ -160,7 +170,7 @@ function renderMesasSummary(pedidos) {
         .flatMap(o => o.items).slice(0, 6)
         .map(i => `${i.quantidade}x ${i.nome_item}`).join(', ');
       return `
-      <div class="mesa-summary-card ${pendentes > 0 ? 'has-pendente' : ''}" onclick="abrirDetalhesMesa(${mesa})">
+      <div class="mesa-summary-card ${orders.some(o => newOrderIds.has(o.id)) ? 'has-pendente' : ''}" onclick="abrirDetalhesMesa(${mesa})">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <span class="mesa-badge">Mesa ${mesa}</span>
           <span style="font-size:20px;font-weight:800;color:var(--accent)">R$ ${fmt(total)}</span>
@@ -220,7 +230,7 @@ function renderDetalhesMesa(mesaNumero, allPedidos) {
     const hora = new Date(p.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bahia' });
 
     return `
-    <div class="order-card ${p.status === 'pendente' ? 'is-pendente' : ''}" id="order-${p.id}" style="margin-bottom:16px">
+    <div class="order-card ${newOrderIds.has(p.id) ? 'is-pendente' : ''}" id="order-${p.id}" style="margin-bottom:16px">
       <div class="card-header">
         <span style="font-size:12px;color:var(--text2)">⏰ ${hora}</span>
         <span class="status-badge status-${p.status}">${statusLabel(p.status)}</span>
