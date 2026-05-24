@@ -183,7 +183,13 @@ function renderMesasSummary(pedidos) {
         <div class="msc-preview">${preview}</div>
         <div class="msc-footer">
           <span style="font-size:12px;color:var(--text2)">${orders.length} pedido${orders.length > 1 ? 's' : ''}</span>
-          <span style="font-size:13px;color:var(--accent);font-weight:600">Ver detalhes →</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button onclick="event.stopPropagation();fecharTodasMesa(${mesa})"
+              style="padding:6px 12px;background:rgba(239,68,68,.15);border:1px solid var(--red);border-radius:8px;color:var(--red);font-size:12px;font-weight:700;cursor:pointer">
+              🧾 Fechar Conta
+            </button>
+            <span style="font-size:13px;color:var(--accent);font-weight:600">Ver detalhes →</span>
+          </div>
         </div>
       </div>`;
     }).join('');
