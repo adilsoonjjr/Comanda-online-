@@ -38,8 +38,14 @@ function conectarSocket() {
   socket = io();
   socket.emit('join_mesa', mesaNumero);
 
-  socket.on('status_atualizado', (order) => {
+  socket.on('status_atualizado', async (order) => {
     atualizarStatusBanner(order.status);
+    try {
+      const res = await fetch(`/api/pedidos/mesa/${mesaNumero}`);
+      const pedidos = await res.json();
+      totalEnviado = pedidos.reduce((s, p) => s + p.total, 0);
+      atualizarLabelFecharConta();
+    } catch { /* mantém total local */ }
   });
 
   socket.on('mesa_resetada', () => {
