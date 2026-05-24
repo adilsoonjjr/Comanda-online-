@@ -160,7 +160,7 @@ function renderMesasSummary(pedidos) {
         .flatMap(o => o.items).slice(0, 6)
         .map(i => `${i.quantidade}x ${i.nome_item}`).join(', ');
       return `
-      <div class="mesa-summary-card" onclick="abrirDetalhesMesa(${mesa})">
+      <div class="mesa-summary-card ${pendentes > 0 ? 'has-pendente' : ''}" onclick="abrirDetalhesMesa(${mesa})">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <span class="mesa-badge">Mesa ${mesa}</span>
           <span style="font-size:20px;font-weight:800;color:var(--accent)">R$ ${fmt(total)}</span>
@@ -220,7 +220,7 @@ function renderDetalhesMesa(mesaNumero, allPedidos) {
     const hora = new Date(p.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bahia' });
 
     return `
-    <div class="order-card" id="order-${p.id}" style="margin-bottom:16px">
+    <div class="order-card ${p.status === 'pendente' ? 'is-pendente' : ''}" id="order-${p.id}" style="margin-bottom:16px">
       <div class="card-header">
         <span style="font-size:12px;color:var(--text2)">⏰ ${hora}</span>
         <span class="status-badge status-${p.status}">${statusLabel(p.status)}</span>
@@ -248,13 +248,13 @@ function buildActions(p) {
   return btns.join('');
 }
 
-let _pedidoParaFechar = null;
 let _pagAdmin = '';
+let _fecharCallback = null;
 
-function fecharPedido(pedidoId, pedidoTotal) {
-  _pedidoParaFechar = pedidoId;
+function _abrirModalPagamento(total, callback) {
+  _fecharCallback = callback;
   _pagAdmin = '';
-  document.getElementById('fechar-admin-total-val').textContent = `R$ ${fmt(pedidoTotal)}`;
+  document.getElementById('fechar-admin-total-val').textContent = `R$ ${fmt(total)}`;
   document.getElementById('troco-admin-group').style.display = 'none';
   document.getElementById('troco-admin-input').value = '';
   document.querySelectorAll('#fechar-admin-pay-btns button').forEach(b => {
@@ -262,6 +262,29 @@ function fecharPedido(pedidoId, pedidoTotal) {
     b.style.background = 'var(--surface2)';
   });
   document.getElementById('modal-fechar-mesa-admin').classList.add('open');
+}
+
+function fecharPedido(pedidoId, pedidoTotal) {
+  _abrirModalPagamento(pedidoTotal, async (forma, troco) => {
+    await fetch(`/api/pedidos/${pedidoId}/finalizar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+      body: JSON.stringify({ forma_pagamento: forma, troco_para: troco }),
+    });
+  });
+}
+
+function fecharTodasMesa(mesaNumero) {
+  const orders = (window._allPedidos || []).filter(p => p.mesa_numero === mesaNumero);
+  const total = orders.reduce((s, o) => s + o.total, 0);
+  _abrirModalPagamento(total, async (forma, troco) => {
+    await fetch(`/api/mesas/${mesaNumero}/resetar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+      body: JSON.stringify({ forma_pagamento: forma, troco_para: troco }),
+    });
+    fecharDetalhesMesa();
+  });
 }
 
 function selecionarPagAdmin(forma) {
@@ -276,11 +299,7 @@ function selecionarPagAdmin(forma) {
 async function confirmarFecharMesaAdmin() {
   if (!_pagAdmin) { alert('Selecione a forma de pagamento'); return; }
   const troco = parseFloat(document.getElementById('troco-admin-input').value) || 0;
-  await fetch(`/api/pedidos/${_pedidoParaFechar}/finalizar`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
-    body: JSON.stringify({ forma_pagamento: _pagAdmin, troco_para: troco }),
-  });
+  if (_fecharCallback) await _fecharCallback(_pagAdmin, troco);
   fecharModal('modal-fechar-mesa-admin');
   carregarPedidos();
 }
