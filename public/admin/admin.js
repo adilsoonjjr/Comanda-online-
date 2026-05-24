@@ -169,12 +169,18 @@ function renderMesasSummary(pedidos) {
         .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
         .flatMap(o => o.items).slice(0, 6)
         .map(i => `${i.quantidade}x ${i.nome_item}`).join(', ');
+      const newOrders = orders.filter(o => newOrderIds.has(o.id));
+      const newItemsText = newOrders.flatMap(o => o.items).map(i => `${i.quantidade}x ${i.nome_item}`).join(', ');
       return `
-      <div class="mesa-summary-card ${orders.some(o => newOrderIds.has(o.id)) ? 'has-pendente' : ''}" onclick="abrirDetalhesMesa(${mesa})">
+      <div class="mesa-summary-card ${newOrders.length > 0 ? 'has-pendente' : ''}" onclick="abrirDetalhesMesa(${mesa})">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <span class="mesa-badge">Mesa ${mesa}</span>
           <span style="font-size:20px;font-weight:800;color:var(--accent)">R$ ${fmt(total)}</span>
         </div>
+        ${newOrders.length > 0 ? `
+        <div style="background:rgba(234,179,8,.12);border:1px solid var(--yellow);border-radius:8px;padding:7px 10px;margin-bottom:10px;font-size:12px;font-weight:700;color:var(--yellow)">
+          🆕 Novo: ${newItemsText}
+        </div>` : ''}
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
           ${pendentes > 0 ? `<span class="status-badge status-pendente">⏳ ${pendentes} pendente${pendentes > 1 ? 's' : ''}</span>` : ''}
           ${preparando > 0 ? `<span class="status-badge status-preparando">👨‍🍳 ${preparando} preparando</span>` : ''}
