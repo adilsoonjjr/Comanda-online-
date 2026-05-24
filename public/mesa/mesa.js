@@ -1,6 +1,7 @@
 'use strict';
 
 const mesaNumero = parseInt(location.pathname.split('/').pop()) || 1;
+const NOME_KEY = `nome_mesa_${mesaNumero}`;
 let menuItems = [];
 let cart = {};
 let formaPagamentoFinal = '';
@@ -16,7 +17,35 @@ document.title = `Mesa ${mesaNumero} — Cardápio`;
   await carregarMenu();
   await carregarPedidosExistentes();
   conectarSocket();
+  iniciarNomeCliente();
 })();
+
+// ── Nome do cliente ────────────────────────────────────────────────────────
+
+function iniciarNomeCliente() {
+  const nome = localStorage.getItem(NOME_KEY);
+  if (nome) {
+    exibirNomeCliente(nome);
+  } else {
+    document.getElementById('modal-nome').classList.add('open');
+    setTimeout(() => document.getElementById('nome-cliente-input').focus(), 150);
+  }
+}
+
+function salvarNomeCliente() {
+  const nome = document.getElementById('nome-cliente-input').value.trim() || 'Cliente';
+  localStorage.setItem(NOME_KEY, nome);
+  document.getElementById('modal-nome').classList.remove('open');
+  exibirNomeCliente(nome);
+}
+
+function exibirNomeCliente(nome) {
+  document.getElementById('header-cliente-nome').textContent = `👤 ${nome}`;
+}
+
+document.getElementById('nome-cliente-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') salvarNomeCliente();
+});
 
 async function carregarPedidosExistentes() {
   try {
@@ -74,7 +103,7 @@ function conectarSocket() {
   });
 
   socket.on('mesa_resetada', () => {
-    // Admin confirmou e fechou a mesa — mostra obrigado e recarrega
+    localStorage.removeItem(NOME_KEY);
     document.getElementById('tela-aguardando').querySelector('.aguardando-icon').textContent = '🎉';
     document.getElementById('tela-aguardando').querySelector('.aguardando-title').textContent = 'Obrigado pela visita!';
     document.getElementById('tela-aguardando').querySelector('.aguardando-sub').textContent = 'Volte sempre!';
@@ -379,12 +408,13 @@ function atualizarStatusBanner(status) {
   const dot = document.getElementById('status-dot');
   const text = document.getElementById('status-text');
   const sub = document.getElementById('status-sub');
-  banner.classList.add('visible');
+  banner.className = 'status-banner visible';
+  if (status === 'preparando' || status === 'pronto') banner.classList.add(`status-${status}`);
   dot.className = `status-dot ${status}`;
   const labels = {
     pendente:   ['⏳ Pedido recebido', 'Aguardando preparo...'],
-    preparando: ['👨‍🍳 Preparando', 'Já estamos no fogão!'],
-    pronto:     ['✅ Pronto!', 'Pode buscar ou aguardar na mesa'],
+    preparando: ['👨‍🍳 Preparando seu pedido!', 'Já estamos no fogão, aguarde...'],
+    pronto:     ['✅ Pedido pronto!', 'Pode buscar ou aguardar na mesa 🎉'],
   };
   [text.textContent, sub.textContent] = labels[status] || [status, ''];
 }

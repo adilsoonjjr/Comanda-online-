@@ -51,16 +51,55 @@
     .toast-adicionado.visible { display: flex; align-items: center; gap: 8px; animation: fadeDown .25s ease; }
 
     /* ── Status Banner ── */
-    .status-banner { display: none; background: #fff; border-bottom: 2px solid var(--border); padding: 14px 20px; }
+    .status-banner { display: none; background: #fff; border-bottom: 2px solid var(--border); padding: 14px 20px; transition: background .3s; }
     .status-banner.visible { display: block; }
+    .status-banner.status-preparando {
+      background: linear-gradient(135deg, #1e40af, #2563eb);
+      border-bottom: none; padding: 20px 20px;
+    }
+    .status-banner.status-pronto {
+      background: linear-gradient(135deg, #15803d, #16a34a);
+      border-bottom: none; padding: 20px 20px;
+    }
     .status-banner-top { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
     .status-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
     .status-dot.pendente { background: #eab308; }
-    .status-dot.preparando { background: var(--blue); animation: pulse 1.5s infinite; }
-    .status-dot.pronto { background: var(--green); }
+    .status-dot.preparando { background: rgba(255,255,255,.9); animation: pulse 1.5s infinite; }
+    .status-dot.pronto { background: rgba(255,255,255,.9); }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
     .status-text { font-size: 14px; font-weight: 700; }
+    .status-banner.status-preparando .status-text,
+    .status-banner.status-pronto .status-text { font-size: 18px; color: #fff; }
     .status-sub { font-size: 12px; color: var(--text2); margin-left: 21px; }
+    .status-banner.status-preparando .status-sub,
+    .status-banner.status-pronto .status-sub { color: rgba(255,255,255,.85); margin-left: 0; font-size: 13px; margin-top: 4px; }
+
+    /* ── Modal Nome ── */
+    #modal-nome {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55);
+      z-index: 900; align-items: center; justify-content: center; padding: 20px;
+    }
+    #modal-nome.open { display: flex; }
+    .nome-card {
+      background: #fff; border-radius: 24px; padding: 36px 28px;
+      width: 100%; max-width: 360px; text-align: center;
+      box-shadow: 0 24px 60px rgba(0,0,0,.25);
+      animation: fadeDown .25s ease;
+    }
+    .nome-card h2 { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+    .nome-card p { font-size: 14px; color: var(--text2); margin-bottom: 24px; }
+    .nome-card input {
+      width: 100%; padding: 14px 16px; border: 2px solid var(--border);
+      border-radius: var(--radius); font-size: 18px; text-align: center;
+      outline: none; margin-bottom: 16px; font-weight: 600;
+      transition: border-color .2s;
+    }
+    .nome-card input:focus { border-color: var(--accent); }
+    .nome-card button {
+      width: 100%; padding: 16px; background: var(--accent); border: none;
+      border-radius: var(--radius); color: #fff; font-size: 16px;
+      font-weight: 700; cursor: pointer;
+    }
 
     /* ── Toast ── */
     .toast-pedido {
@@ -214,12 +253,23 @@
 <header class="header">
   <div>
     <div class="header-title">🍽️ Mesa <span id="mesa-num-header">—</span></div>
-    <div class="header-sub">Cardápio Digital</div>
+    <div class="header-sub" id="header-cliente-nome">Cardápio Digital</div>
   </div>
   <button class="cart-btn" onclick="abrirCarrinho()">
     🛒<span class="cart-count" id="cart-count">0</span>
   </button>
 </header>
+
+<!-- Modal Nome Cliente -->
+<div id="modal-nome">
+  <div class="nome-card">
+    <div style="font-size:52px;margin-bottom:12px">👋</div>
+    <h2>Olá! Qual seu nome?</h2>
+    <p>Para identificar seus pedidos na mesa</p>
+    <input type="text" id="nome-cliente-input" placeholder="Seu nome" maxlength="30" />
+    <button onclick="salvarNomeCliente()">Entrar na Mesa →</button>
+  </div>
+</div>
 
 <!-- Status Banner -->
 <div class="status-banner" id="status-banner">
