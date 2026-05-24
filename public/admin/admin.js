@@ -226,7 +226,10 @@ function renderDetalhesMesa(mesaNumero, allPedidos) {
   document.getElementById('mesa-detail-orders').innerHTML = orders.map(p => {
     const itens = p.items.map(i =>
       `<div class="order-item">
-        <span><span class="item-qty">${i.quantidade}x</span> ${i.nome_item}</span>
+        <span>
+          <span class="item-qty">${i.quantidade}x</span> ${i.nome_item}
+          ${i.observacao ? `<br><span style="font-size:11px;color:var(--text2);padding-left:2px">📝 ${i.observacao}</span>` : ''}
+        </span>
         <div style="display:flex;align-items:center;gap:8px">
           <span class="item-price">R$ ${fmt(i.preco_unitario * i.quantidade)}</span>
           <button onclick="removerItemPedido(${p.id},${i.id})" title="Remover item"

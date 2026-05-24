@@ -73,6 +73,11 @@ async function initDatabase() {
     await run('ALTER TABLE menu_items ADD COLUMN prato_do_dia INTEGER NOT NULL DEFAULT 0');
   } catch { /* already exists */ }
 
+  // Migration: observacao column on order_items
+  try {
+    await run("ALTER TABLE order_items ADD COLUMN observacao TEXT NOT NULL DEFAULT ''");
+  } catch { /* already exists */ }
+
   const tc = await get('SELECT COUNT(*) as c FROM tables');
   if (!tc || tc.c === 0) {
     for (let i = 1; i <= 5; i++) await run('INSERT INTO tables (numero) VALUES (?)', [i]);
@@ -199,8 +204,8 @@ async function createOrder(mesa_numero, forma_pagamento, troco_para, total, item
   const orderId = result.lastInsertRowid;
   for (const item of items) {
     await run(
-      'INSERT INTO order_items (order_id, item_id, quantidade, preco_unitario, nome_item) VALUES (?,?,?,?,?)',
-      [orderId, item.item_id, item.quantidade, item.preco_unitario, item.nome_item]
+      'INSERT INTO order_items (order_id, item_id, quantidade, preco_unitario, nome_item, observacao) VALUES (?,?,?,?,?,?)',
+      [orderId, item.item_id, item.quantidade, item.preco_unitario, item.nome_item, item.observacao || '']
     );
   }
   return orderId;

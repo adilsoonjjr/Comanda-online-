@@ -7,6 +7,8 @@ let cart = {};
 let formaPagamentoFinal = '';
 let totalEnviado = 0;
 let socket = null;
+let _addItemId = null;
+let _addItemQty = 1;
 
 document.getElementById('mesa-num-header').textContent = mesaNumero;
 document.title = `Mesa ${mesaNumero} — Cardápio`;
@@ -172,8 +174,36 @@ function renderMenu(items) {
 function adicionarItem(id) {
   const item = menuItems.find(i => i.id === id);
   if (!item) return;
-  if (!cart[id]) cart[id] = { item, qty: 0 };
-  cart[id].qty++;
+  _addItemId = id;
+  _addItemQty = 1;
+  document.getElementById('add-item-nome').textContent = item.nome;
+  document.getElementById('add-item-preco').textContent = `R$ ${fmt(item.preco)}`;
+  document.getElementById('add-item-desc').textContent = item.descricao || '';
+  document.getElementById('add-item-qty').textContent = '1';
+  document.getElementById('add-item-obs').value = '';
+  document.getElementById('modal-add-item').classList.add('open');
+  setTimeout(() => document.getElementById('add-item-obs').focus(), 200);
+}
+
+function alterarQtdAdd(delta) {
+  _addItemQty = Math.max(1, _addItemQty + delta);
+  document.getElementById('add-item-qty').textContent = _addItemQty;
+}
+
+function fecharModalAddItem() {
+  document.getElementById('modal-add-item').classList.remove('open');
+  _addItemId = null;
+}
+
+function confirmarAddItem() {
+  if (!_addItemId) return;
+  const item = menuItems.find(i => i.id === _addItemId);
+  if (!item) return;
+  const obs = document.getElementById('add-item-obs').value.trim();
+  if (!cart[_addItemId]) cart[_addItemId] = { item, qty: 0, obs: '' };
+  cart[_addItemId].qty += _addItemQty;
+  if (obs) cart[_addItemId].obs = obs;
+  fecharModalAddItem();
   atualizarBadgeCarrinho();
   mostrarToastAdicionado(item.nome);
   animarCarrinho();
@@ -240,10 +270,11 @@ function renderCarrinho() {
     return;
   }
 
-  container.innerHTML = items.map(({ item, qty }) => `
+  container.innerHTML = items.map(({ item, qty, obs }) => `
     <div class="cart-item">
       <div class="cart-item-info">
         <div class="cart-item-name">${item.nome}</div>
+        ${obs ? `<div class="cart-item-obs">📝 ${obs}</div>` : ''}
         <div class="cart-item-price">R$ ${fmt(item.preco * qty)}</div>
       </div>
       <div class="qty-ctrl">
@@ -263,8 +294,8 @@ function renderCarrinho() {
 function abrirCheckout() {
   fecharCarrinho();
   const items = Object.values(cart);
-  const linhas = items.map(({ item, qty }) =>
-    `<div class="summary-item"><span>${qty}x ${item.nome}</span><span>R$ ${fmt(item.preco * qty)}</span></div>`
+  const linhas = items.map(({ item, qty, obs }) =>
+    `<div class="summary-item"><span>${qty}x ${item.nome}${obs ? `<br><span style="font-size:11px;color:var(--text2)">📝 ${obs}</span>` : ''}</span><span>R$ ${fmt(item.preco * qty)}</span></div>`
   ).join('');
   document.getElementById('checkout-summary').innerHTML = `
     ${linhas}
@@ -287,9 +318,10 @@ async function confirmarPedido() {
     forma_pagamento: '',
     troco_para: 0,
     total: totalCarrinho(),
-    items: items.map(({ item, qty }) => ({
+    items: items.map(({ item, qty, obs }) => ({
       item_id: item.id, quantidade: qty,
       preco_unitario: item.preco, nome_item: item.nome,
+      observacao: obs || '',
     })),
   };
 
@@ -357,8 +389,9 @@ async function confirmarFechamento() {
     const body = {
       mesa_numero: mesaNumero, forma_pagamento: '', troco_para: 0,
       total: totalCarrinho(),
-      items: Object.values(cart).map(({ item, qty }) => ({
+      items: Object.values(cart).map(({ item, qty, obs }) => ({
         item_id: item.id, quantidade: qty, preco_unitario: item.preco, nome_item: item.nome,
+        observacao: obs || '',
       })),
     };
     await fetch('/api/pedidos', {
