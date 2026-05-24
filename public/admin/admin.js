@@ -136,7 +136,11 @@ function renderPedidos(pedidos) {
     const itens = p.items.map(i =>
       `<div class="order-item">
         <span><span class="item-qty">${i.quantidade}x</span> ${i.nome_item}</span>
-        <span class="item-price">R$ ${fmt(i.preco_unitario * i.quantidade)}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="item-price">R$ ${fmt(i.preco_unitario * i.quantidade)}</span>
+          <button onclick="removerItemPedido(${p.id},${i.id})" title="Remover item"
+            style="background:rgba(239,68,68,.15);border:none;border-radius:6px;color:var(--red);cursor:pointer;padding:2px 7px;font-size:14px;font-weight:700;line-height:1">×</button>
+        </div>
       </div>`
     ).join('');
 
@@ -214,6 +218,14 @@ async function confirmarFecharMesaAdmin() {
     body: JSON.stringify({ forma_pagamento: _pagAdmin, troco_para: troco }),
   });
   fecharModal('modal-fechar-mesa-admin');
+  carregarPedidos();
+}
+
+async function removerItemPedido(pedidoId, itemId) {
+  if (!confirm('Remover este item do pedido?')) return;
+  await fetch(`/api/pedidos/${pedidoId}/item/${itemId}`, {
+    method: 'DELETE', headers: { 'x-admin-token': token },
+  });
   carregarPedidos();
 }
 

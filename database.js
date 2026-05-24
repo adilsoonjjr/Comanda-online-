@@ -153,6 +153,12 @@ function updateMenuItem(id, nome, descricao, preco, categoria, emoji, disponivel
 
 function deleteMenuItem(id) { return run('DELETE FROM menu_items WHERE id=?', [id]); }
 
+async function removeOrderItem(orderId, itemId) {
+  await run('DELETE FROM order_items WHERE id=? AND order_id=?', [itemId, orderId]);
+  const row = await get('SELECT COALESCE(SUM(preco_unitario * quantidade),0) as total FROM order_items WHERE order_id=?', [orderId]);
+  await run('UPDATE orders SET total=? WHERE id=?', [row.total, orderId]);
+}
+
 // ── Orders ─────────────────────────────────────────────────────────────────
 
 async function attachItems(orders) {
@@ -238,5 +244,5 @@ module.exports = {
   getAllTables, addTable, updateTableStatus,
   getAllMenuItems, getAvailableMenuItems, addMenuItem, updateMenuItem, deleteMenuItem,
   getAllActiveOrders, getOrdersByMesa, getOrderById, createOrder, updateOrderStatus,
-  getTotalAtivoByMesa, closeAllOrdersByMesa, getDailyReport, clearDailyOrders,
+  getTotalAtivoByMesa, closeAllOrdersByMesa, getDailyReport, clearDailyOrders, removeOrderItem,
 };
