@@ -154,8 +154,10 @@ app.post('/api/pedidos/:id/finalizar', requireAdmin, async (req, res) => {
   try {
     const { forma_pagamento, troco_para } = req.body;
     if (!forma_pagamento) return res.status(400).json({ error: 'Forma de pagamento obrigatória' });
+    const order = await db.getOrderById(req.params.id);
     await db.finalizeOrder(req.params.id, forma_pagamento, troco_para || 0);
     io.to('admin').emit('pedido_removido');
+    if (order) io.to(`mesa_${order.mesa_numero}`).emit('pedido_removido');
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

@@ -64,6 +64,15 @@ function conectarSocket() {
     } catch { /* mantém total local */ }
   });
 
+  socket.on('pedido_removido', async () => {
+    try {
+      const res = await fetch(`/api/pedidos/mesa/${mesaNumero}`);
+      const pedidos = await res.json();
+      totalEnviado = pedidos.reduce((s, p) => s + p.total, 0);
+      atualizarLabelFecharConta();
+    } catch { /* mantém total local */ }
+  });
+
   socket.on('mesa_resetada', () => {
     // Admin confirmou e fechou a mesa — mostra obrigado e recarrega
     document.getElementById('tela-aguardando').querySelector('.aguardando-icon').textContent = '🎉';
