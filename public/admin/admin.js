@@ -89,7 +89,7 @@ function switchTab(tab) {
   if (tab === 'cardapio') carregarMenu();
   if (tab === 'mesas') carregarMesas();
   if (tab === 'qrcodes') carregarQRCodes();
-  if (tab === 'relatorio') carregarRelatorio();
+  if (tab === 'relatorio') { popularSelectMes(); carregarRelatorio(); }
 }
 
 function toggleTab(tab) { switchTab(tab); }
@@ -662,6 +662,19 @@ async function confirmarComSenha() {
   } catch { errEl.textContent = 'Erro de conexão'; }
 }
 
+let _relatorioModo = 'dia';
+
+function switchRelatorio(modo) {
+  _relatorioModo = modo;
+  document.getElementById('rel-toggle-dia').style.background  = modo === 'dia' ? 'var(--accent)' : 'transparent';
+  document.getElementById('rel-toggle-dia').style.color       = modo === 'dia' ? '#fff' : 'var(--text2)';
+  document.getElementById('rel-toggle-mes').style.background  = modo === 'mes' ? 'var(--accent)' : 'transparent';
+  document.getElementById('rel-toggle-mes').style.color       = modo === 'mes' ? '#fff' : 'var(--text2)';
+  document.getElementById('rel-actions-dia').style.display    = modo === 'dia' ? 'flex' : 'none';
+  document.getElementById('rel-actions-mes').style.display    = modo === 'mes' ? 'flex' : 'none';
+  if (modo === 'dia') carregarRelatorio(); else carregarRelatorioMes();
+}
+
 function zerarRelatorio() {
   pedirSenhaAdmin(async () => {
     await fetch('/api/relatorio/dia', { method: 'DELETE', headers: { 'x-admin-token': token } });
@@ -706,6 +719,85 @@ function renderRelatorio(data) {
             <td style="font-size:12px;color:var(--text2)">${pag}</td>
           </tr>`;
         }).join('')}
+      </tbody>
+    </table></div>
+  `;
+}
+
+// ── Relatório Mensal ───────────────────────────────────────────────────────
+
+function popularSelectMes() {
+  const sel = document.getElementById('mes-select');
+  if (sel.options.length > 0) return;
+  const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const now = new Date(Date.now() - 3 * 60 * 60 * 1000);
+  const anoAtual = now.getUTCFullYear();
+  const mesAtual = now.getUTCMonth() + 1;
+  for (let m = 1; m <= 12; m++) {
+    if (m > mesAtual) continue;
+    const opt = document.createElement('option');
+    opt.value = `${anoAtual}-${m}`;
+    opt.textContent = `${meses[m-1]} ${anoAtual}`;
+    if (m === mesAtual) opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
+async function carregarRelatorioMes() {
+  popularSelectMes();
+  const sel = document.getElementById('mes-select');
+  const [ano, mes] = (sel.value || '').split('-').map(Number);
+  if (!ano || !mes) return;
+  try {
+    const res = await fetch(`/api/relatorio/mes?ano=${ano}&mes=${mes}`, { headers: { 'x-admin-token': token } });
+    const data = await res.json();
+    renderRelatorioMes(data);
+  } catch { document.getElementById('relatorio-lista').innerHTML = '<p style="color:var(--text2)">Erro ao carregar relatório mensal.</p>'; }
+}
+
+function renderRelatorioMes(data) {
+  const { orders, total, mesas, totalPedidos, year, month } = data;
+  const nomeMes = new Date(year, month - 1, 1).toLocaleString('pt-BR', { month: 'long' });
+  document.getElementById('relatorio-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Faturado em ${nomeMes}</div><div class="stat-value stat-orange">R$ ${fmt(total)}</div></div>
+    <div class="stat-card"><div class="stat-label">Mesas atendidas</div><div class="stat-value stat-green">${mesas}</div></div>
+    <div class="stat-card"><div class="stat-label">Total de pedidos</div><div class="stat-value stat-blue">${totalPedidos}</div></div>
+  `;
+  if (!orders.length) {
+    document.getElementById('relatorio-lista').innerHTML = `<div class="empty-state"><div class="icon">📆</div><p>Nenhum pedido em ${nomeMes} ${year}</p></div>`;
+    return;
+  }
+
+  // agrupar finalizados por dia (horário BRT)
+  const finalizados = orders.filter(o => o.status === 'finalizado');
+  const byDay = {};
+  finalizados.forEach(o => {
+    const d = new Date(new Date(o.created_at).getTime() - 3*60*60*1000).toISOString().split('T')[0];
+    if (!byDay[d]) byDay[d] = { total: 0, pedidos: 0 };
+    byDay[d].total   += o.total;
+    byDay[d].pedidos += 1;
+  });
+  const dias = Object.entries(byDay).sort(([a],[b]) => a.localeCompare(b));
+
+  document.getElementById('relatorio-lista').innerHTML = `
+    <h3 style="font-size:15px;font-weight:700;color:var(--text2);margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px">Resumo por dia</h3>
+    <div style="overflow-x:auto;margin-bottom:28px">
+    <table class="menu-table">
+      <thead><tr><th>Data</th><th>Pedidos finalizados</th><th>Faturado</th></tr></thead>
+      <tbody>
+        ${dias.map(([d, v]) => {
+          const label = new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'short', weekday:'short' });
+          return `<tr>
+            <td style="font-weight:600">${label}</td>
+            <td style="color:var(--text2)">${v.pedidos}</td>
+            <td style="font-weight:700;color:var(--accent)">R$ ${fmt(v.total)}</td>
+          </tr>`;
+        }).join('')}
+        <tr style="border-top:2px solid var(--border)">
+          <td style="font-weight:800">Total</td>
+          <td style="font-weight:800;color:var(--blue)">${finalizados.length}</td>
+          <td style="font-weight:800;color:var(--accent)">R$ ${fmt(total)}</td>
+        </tr>
       </tbody>
     </table></div>
   `;

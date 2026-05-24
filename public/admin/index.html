@@ -442,11 +442,27 @@
 
       <!-- Relatório -->
       <div id="tab-relatorio" class="tab-content">
-        <div class="section-header">
-          <h2 class="page-title" style="margin:0">Relatório do Dia</h2>
-          <div style="display:flex;gap:8px">
+        <!-- Toggle Diário / Mensal -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+          <div style="display:flex;background:var(--surface2);border-radius:10px;padding:4px;gap:4px">
+            <button id="rel-toggle-dia" onclick="switchRelatorio('dia')"
+              style="padding:8px 20px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;background:var(--accent);color:#fff">
+              📅 Hoje
+            </button>
+            <button id="rel-toggle-mes" onclick="switchRelatorio('mes')"
+              style="padding:8px 20px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;background:transparent;color:var(--text2)">
+              📆 Mensal
+            </button>
+          </div>
+          <div id="rel-actions-dia" style="display:flex;gap:8px">
             <button class="btn-add" onclick="carregarRelatorio()">↻ Atualizar</button>
-            <button class="btn-add" style="background:var(--red)" onclick="zerarRelatorio()">🗑️ Zerar</button>
+            <button class="btn-add" style="background:var(--red)" onclick="zerarRelatorio()">🗑️ Zerar Dia</button>
+          </div>
+          <div id="rel-actions-mes" style="display:none;align-items:center;gap:8px">
+            <select id="mes-select" onchange="carregarRelatorioMes()"
+              style="padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px">
+            </select>
+            <button class="btn-add" onclick="carregarRelatorioMes()">↻ Atualizar</button>
           </div>
         </div>
         <div class="stats-bar" id="relatorio-stats"></div>

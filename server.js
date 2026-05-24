@@ -221,7 +221,22 @@ app.get('/api/relatorio/dia', requireAdmin, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.delete('/api/relatorio/dia', requireAdmin, async (req, res) => {
+app.get('/api/relatorio/mes', requireAdmin, async (req, res) => {
+  try {
+    const brtNow = new Date(Date.now() - 3 * 60 * 60 * 1000);
+    const year  = parseInt(req.query.ano) || brtNow.getUTCFullYear();
+    const month = parseInt(req.query.mes) || (brtNow.getUTCMonth() + 1);
+    const start = new Date(Date.UTC(year, month - 1, 1, 3, 0, 0));
+    const end   = new Date(Date.UTC(month === 12 ? year + 1 : year, month === 12 ? 0 : month, 1, 3, 0, 0));
+    const orders = await db.getDailyReport(start.toISOString(), end.toISOString());
+    const finalizados = orders.filter(o => o.status === 'finalizado');
+    const total = finalizados.reduce((s, o) => s + o.total, 0);
+    const mesas = new Set(finalizados.map(o => o.mesa_numero)).size;
+    res.json({ orders, total, mesas, totalPedidos: orders.length, year, month });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+
   try {
     const date = req.query.data || getTodayBRT();
     const start = new Date(`${date}T03:00:00.000Z`);
