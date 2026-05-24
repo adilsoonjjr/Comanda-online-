@@ -104,19 +104,31 @@
     .add-btn { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); border: none; color: #fff; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .add-btn:active { background: var(--accent2); }
 
-    /* ── Botão Fechar Conta (fixo no rodapé) ── */
+    /* ── Rodapé com dois botões ── */
     .fechar-conta-bar {
       position: fixed; bottom: 0; left: 0; right: 0; padding: 12px 16px;
       padding-bottom: calc(12px + env(safe-area-inset-bottom));
       background: #fff; border-top: 2px solid var(--border); z-index: 150;
+      display: flex; gap: 10px;
     }
-    .btn-fechar-conta {
-      width: 100%; padding: 16px; background: var(--red); border: none;
+    .btn-fazer-pedido {
+      flex: 1; padding: 16px; background: var(--accent); border: none;
       border-radius: var(--radius); color: #fff; font-size: 16px; font-weight: 700;
       cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
     }
+    .btn-fazer-pedido:active { background: var(--accent2); }
+    .cart-count-bar {
+      background: #fff; color: var(--accent);
+      font-size: 12px; font-weight: 800; border-radius: 12px; padding: 2px 8px; display: none;
+    }
+    .btn-fechar-conta {
+      padding: 12px 14px; background: var(--red); border: none;
+      border-radius: var(--radius); color: #fff; font-size: 13px; font-weight: 700;
+      cursor: pointer; display: none; flex-direction: column;
+      align-items: center; justify-content: center; gap: 2px; min-width: 96px; text-align: center;
+    }
     .btn-fechar-conta:active { opacity: .85; }
-    .fechar-total { font-size: 13px; opacity: .85; font-weight: 500; }
+    .fechar-total { font-size: 11px; opacity: .9; font-weight: 500; }
 
     /* ── Cart Drawer ── */
     .drawer-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; }
@@ -233,10 +245,14 @@
 <!-- Toast confirmação de pedido -->
 <div class="toast-pedido" id="toast-pedido">✅ Pedido enviado!</div>
 
-<!-- Botão Fechar Conta (fixo no rodapé) -->
+<!-- Rodapé: Fazer Pedido + Fechar Conta -->
 <div class="fechar-conta-bar">
-  <button class="btn-fechar-conta" onclick="abrirFecharConta()">
-    <span>🧾 Fechar Conta</span>
+  <button class="btn-fazer-pedido" onclick="abrirCarrinho()">
+    🛒 Fazer Pedido
+    <span class="cart-count-bar" id="cart-count-bar"></span>
+  </button>
+  <button class="btn-fechar-conta" id="btn-fechar-conta" onclick="abrirFecharConta()">
+    🧾 Fechar Conta
     <span class="fechar-total" id="fechar-total-label"></span>
   </button>
 </div>

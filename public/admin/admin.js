@@ -102,13 +102,17 @@ function atualizarBadges() {
 
 // ── Pedidos ────────────────────────────────────────────────────────────────
 
+let _mesaDetalhe = null;
+
 async function carregarPedidos() {
   try {
     const res = await fetch('/api/pedidos', { headers: { 'x-admin-token': token } });
     if (res.status === 401) { fazerLogout(); return; }
     const pedidos = await res.json();
+    window._allPedidos = pedidos;
     renderStats(pedidos);
-    renderPedidos(pedidos);
+    renderMesasSummary(pedidos);
+    if (_mesaDetalhe !== null) renderDetalhesMesa(_mesaDetalhe, pedidos);
   } catch { /* ignore */ }
 }
 
@@ -125,7 +129,7 @@ function renderStats(pedidos) {
   `;
 }
 
-function renderPedidos(pedidos) {
+function renderMesasSummary(pedidos) {
   const container = document.getElementById('pedidos-container');
   if (pedidos.length === 0) {
     container.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
@@ -133,7 +137,67 @@ function renderPedidos(pedidos) {
     </div>`;
     return;
   }
-  container.innerHTML = pedidos.map(p => {
+
+  const byMesa = {};
+  pedidos.forEach(p => {
+    if (!byMesa[p.mesa_numero]) byMesa[p.mesa_numero] = [];
+    byMesa[p.mesa_numero].push(p);
+  });
+
+  container.innerHTML = Object.entries(byMesa)
+    .sort(([a], [b]) => parseInt(a) - parseInt(b))
+    .map(([mesa, orders]) => {
+      const total = orders.reduce((s, o) => s + o.total, 0);
+      const pendentes = orders.filter(o => o.status === 'pendente').length;
+      const preparando = orders.filter(o => o.status === 'preparando').length;
+      const prontos = orders.filter(o => o.status === 'pronto').length;
+      const preview = orders
+        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+        .flatMap(o => o.items).slice(0, 6)
+        .map(i => `${i.quantidade}x ${i.nome_item}`).join(', ');
+      return `
+      <div class="mesa-summary-card" onclick="abrirDetalhesMesa(${mesa})">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span class="mesa-badge">Mesa ${mesa}</span>
+          <span style="font-size:20px;font-weight:800;color:var(--accent)">R$ ${fmt(total)}</span>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+          ${pendentes > 0 ? `<span class="status-badge status-pendente">⏳ ${pendentes} pendente${pendentes > 1 ? 's' : ''}</span>` : ''}
+          ${preparando > 0 ? `<span class="status-badge status-preparando">👨‍🍳 ${preparando} preparando</span>` : ''}
+          ${prontos > 0 ? `<span class="status-badge status-pronto">✅ ${prontos} pronto${prontos > 1 ? 's' : ''}</span>` : ''}
+        </div>
+        <div class="msc-preview">${preview}</div>
+        <div class="msc-footer">
+          <span style="font-size:12px;color:var(--text2)">${orders.length} pedido${orders.length > 1 ? 's' : ''}</span>
+          <span style="font-size:13px;color:var(--accent);font-weight:600">Ver detalhes →</span>
+        </div>
+      </div>`;
+    }).join('');
+}
+
+function abrirDetalhesMesa(mesaNumero) {
+  _mesaDetalhe = parseInt(mesaNumero);
+  renderDetalhesMesa(_mesaDetalhe, window._allPedidos || []);
+  document.getElementById('mesa-detail-overlay').classList.add('open');
+}
+
+function fecharDetalhesMesa() {
+  _mesaDetalhe = null;
+  document.getElementById('mesa-detail-overlay').classList.remove('open');
+}
+
+function renderDetalhesMesa(mesaNumero, allPedidos) {
+  const orders = allPedidos
+    .filter(p => p.mesa_numero === mesaNumero)
+    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+  if (!orders.length) { fecharDetalhesMesa(); return; }
+
+  const total = orders.reduce((s, o) => s + o.total, 0);
+  document.getElementById('mesa-detail-title').textContent = `Mesa ${mesaNumero}`;
+  document.getElementById('mesa-detail-total-header').textContent = `R$ ${fmt(total)}`;
+
+  document.getElementById('mesa-detail-orders').innerHTML = orders.map(p => {
     const itens = p.items.map(i =>
       `<div class="order-item">
         <span><span class="item-qty">${i.quantidade}x</span> ${i.nome_item}</span>
@@ -149,23 +213,21 @@ function renderPedidos(pedidos) {
       ? `<div class="pagamento-info">💳 ${p.forma_pagamento}${p.troco_para > 0 ? ` · Troco p/ R$ ${fmt(p.troco_para)}` : ''}</div>`
       : '';
 
-    const actions = buildActions(p);
     const hora = new Date(p.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bahia' });
 
     return `
-    <div class="order-card" id="order-${p.id}">
+    <div class="order-card" id="order-${p.id}" style="margin-bottom:16px">
       <div class="card-header">
-        <span class="mesa-badge">Mesa ${p.mesa_numero}</span>
+        <span style="font-size:12px;color:var(--text2)">⏰ ${hora}</span>
         <span class="status-badge status-${p.status}">${statusLabel(p.status)}</span>
       </div>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:12px">⏰ ${hora}</div>
       <div class="order-items">${itens}</div>
       <div class="card-total">
         <span class="total-label">Total</span>
         <span class="total-value">R$ ${fmt(p.total)}</span>
       </div>
       ${pagInfo}
-      <div class="card-actions">${actions}</div>
+      <div class="card-actions">${buildActions(p)}</div>
     </div>`;
   }).join('');
 }

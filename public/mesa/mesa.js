@@ -178,8 +178,11 @@ function alterarQtd(id, delta) {
 function atualizarBadgeCarrinho() {
   const total = Object.values(cart).reduce((s, v) => s + v.qty, 0);
   const badge = document.getElementById('cart-count');
+  const badgeBar = document.getElementById('cart-count-bar');
   badge.textContent = total;
   badge.style.display = total > 0 ? 'flex' : 'none';
+  badgeBar.textContent = total;
+  badgeBar.style.display = total > 0 ? 'inline' : 'none';
 }
 
 function totalCarrinho() {
@@ -361,8 +364,14 @@ async function confirmarFechamento() {
 // ── Helpers visuais ────────────────────────────────────────────────────────
 
 function atualizarLabelFecharConta() {
+  const btn = document.getElementById('btn-fechar-conta');
   const label = document.getElementById('fechar-total-label');
-  label.textContent = totalEnviado > 0 ? `— R$ ${fmt(totalEnviado)} consumido` : '';
+  if (totalEnviado > 0) {
+    label.textContent = `R$ ${fmt(totalEnviado)}`;
+    btn.style.display = 'flex';
+  } else {
+    btn.style.display = 'none';
+  }
 }
 
 function atualizarStatusBanner(status) {
